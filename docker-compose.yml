@@ -40,7 +40,7 @@ services:
     volumes:
       - ./application.yml:/opt/Lavalink/application.yml
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:2333/version || exit 1"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --header=\"Authorization: youshallnotpass\" --spider http://127.0.0.1:2333/version || exit 1"]
       interval: 5s
       timeout: 5s
       retries: 12
