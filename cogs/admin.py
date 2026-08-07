@@ -13,6 +13,7 @@ import sys
 from utils.embeds import EmbedFactory, EmbedColor
 from utils.permissions import is_admin
 from database.db_manager import DatabaseManager
+from utils.i18n import i18n, t
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +25,34 @@ class Admin(commands.Cog):
         self.bot = bot
         self.db = db
         self.config = config
+
+    @app_commands.command(name="setlanguage", description="Change bot language setting (Admin)")
+    @app_commands.describe(language="Select language (en for English, ar for Arabic)")
+    @app_commands.choices(language=[
+        app_commands.Choice(name="English (English)", value="en"),
+        app_commands.Choice(name="العربية (Arabic)", value="ar")
+    ])
+    @is_admin()
+    async def set_language(self, interaction: discord.Interaction, language: app_commands.Choice[str]):
+        """Set bot language state"""
+        lang_code = language.value
+        success = i18n.set_language(lang_code)
+        
+        if success:
+            lang_name = i18n.get_language_name(lang_code)
+            embed = EmbedFactory.success(
+                t("language.set_success_title", lang=lang_code),
+                t("language.set_success", lang=lang_code, lang_name=lang_name, lang_code=lang_code)
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            logger.info(f"{interaction.user} changed bot language to {lang_code}")
+        else:
+            embed = EmbedFactory.error(
+                t("common.error"),
+                t("language.invalid")
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+
 
     @app_commands.command(name="reload", description="Reload a cog")
     @app_commands.describe(cog="Name of the cog to reload")

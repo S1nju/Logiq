@@ -1,0 +1,126 @@
+# English Translations for Logiq Bot
+
+common:
+  success: "Success"
+  error: "Error"
+  warning: "Warning"
+  info: "Information"
+  no_permission: "You don't have permission to use this command."
+  missing_argument: "Missing required argument: {param}"
+  invalid_amount: "Invalid amount"
+  invalid_duration: "Invalid duration"
+  none: "None"
+  unknown: "Unknown"
+  not_set: "Not set"
+
+language:
+  set_success_title: "🌐 Language Updated"
+  set_success: "Bot language updated to **{lang_name} ({lang_code})** successfully!"
+  current: "Current language: **{lang_name} ({lang_code})**"
+  invalid: "Invalid language choice. Supported languages: **English (en)**, **Arabic (ar)**"
+  command_desc: "Change bot language setting (Admin)"
+
+admin:
+  reload_desc: "Reload a cog"
+  reload_success_title: "Cog Reloaded"
+  reload_success: "Successfully reloaded **{cog}**"
+  reload_not_loaded: "Cog **{cog}** is not loaded"
+  reload_not_found: "Cog **{cog}** not found"
+  reload_failed: "Failed to reload: {error}"
+  
+  sync_desc: "Sync slash commands"
+  sync_success_title: "Commands Synced"
+  sync_success: "Successfully synced **{count}** commands"
+  sync_failed: "Failed to sync: {error}"
+  
+  modules_desc: "View and toggle modules"
+  modules_title: "📦 Bot Modules"
+  modules_empty: "No modules configured"
+  
+  botinfo_desc: "View bot information"
+  botinfo_title: "🤖 Logiq Information"
+  
+  setlogchannel_desc: "Set the log channel"
+  setlogchannel_success_title: "Log Channel Set"
+  setlogchannel_success: "Moderation logs will be sent to {channel}"
+  
+  config_desc: "View server configuration"
+  config_title: "⚙️ Server Configuration"
+  config_none: "Server has no configuration yet"
+  
+  purge_desc: "Delete messages in bulk"
+  purge_success_title: "Messages Purged"
+  purge_success: "Deleted **{count}** messages"
+  purge_invalid: "Amount must be between 1 and 100"
+  purge_no_permission: "I don't have permission to delete messages"
+
+utility:
+  poll_desc: "Create a poll"
+  poll_results: "📊 Poll Results"
+  poll_total_votes: "Total votes: {count}"
+  poll_invalid_duration: "Duration must be between 1 minute and 1 week"
+  poll_ends_in: "Poll ends in {duration} minutes | Total votes: {count}"
+  
+  remind_desc: "Set a reminder"
+  remind_success_title: "Reminder Set"
+  remind_success: "I'll remind you in **{duration}**\n\nMessage: {message}"
+  remind_invalid_duration: "Please provide a valid duration (e.g., 1h, 30m, 2d)"
+  remind_too_long: "Maximum reminder duration is 1 year"
+  remind_notification_title: "⏰ Reminder"
+  
+  serverstats_desc: "View server statistics"
+  serverstats_title: "📊 Server Statistics - {name}"
+  total_members: "👥 Total Members"
+  humans: "🙋 Humans"
+  bots: "🤖 Bots"
+  text_channels: "💬 Text Channels"
+  voice_channels: "🔊 Voice Channels"
+  roles: "🎭 Roles"
+  owner: "👑 Owner"
+  created: "📅 Created"
+  boost_level: "🚀 Boost Level"
+  
+  userinfo_desc: "Get information about a user"
+  userinfo_title: "User Information - {name}"
+  username: "Username"
+  id: "ID"
+  nickname: "Nickname"
+  account_created: "Account Created"
+  joined_server: "Joined Server"
+  top_role: "Top Role"
+  
+  avatar_desc: "Get user's avatar"
+  avatar_title: "Avatar - {name}"
+
+moderation:
+  action_title: "🔨 {action}"
+  action_desc: "{user} has been {action}"
+  reason: "Reason"
+  moderator: "Moderator"
+  target_user: "User"
+
+leveling:
+  level_up_title: "🎉 Level Up!"
+  level_up_desc: "{user} just reached **Level {level}**!"
+  rank_title: "📊 Rank Card - {user}"
+  rank: "Rank"
+  level: "Level"
+  xp: "XP"
+  progress: "Progress"
+  leaderboard_title: "🏆 {title}"
+
+economy:
+  balance_title: "{symbol} Balance"
+  balance_desc: "{user}'s balance"
+  amount: "Amount"
+
+tickets:
+  created_title: "🎫 Ticket Created"
+  created_desc: "Your support ticket has been created!"
+  ticket_id: "Ticket ID"
+  category: "Category"
+
+verification:
+  prompt_title: "🔐 Verification Required"
+  prompt_desc: "Click the button below to verify and gain access to the server."
+  prompt_footer: "Complete verification to unlock all channels"

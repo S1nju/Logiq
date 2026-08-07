@@ -16,6 +16,7 @@ from dotenv import load_dotenv
 from database.db_manager import DatabaseManager
 from utils.logger import BotLogger
 from utils.embeds import EmbedColor
+from utils.i18n import I18nManager, i18n
 
 # Load environment variables
 load_dotenv()
@@ -44,6 +45,13 @@ class Logiq(commands.Bot):
 
         # Setup logging
         self.logger = BotLogger(config.get('logging', {}))
+
+        # Setup i18n
+        initial_lang = config.get('bot', {}).get('language') or config.get('i18n', {}).get('language', 'en')
+        self.i18n = i18n
+        self.i18n.set_language(initial_lang)
+        self.logger.info(f"Initialized i18n with language: {self.i18n.current_language}")
+
 
         # Setup database
         db_config = config.get('database', {})

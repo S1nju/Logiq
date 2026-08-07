@@ -1,0 +1,126 @@
+# Arabic Translations for Logiq Bot
+
+common:
+  success: "نجاح"
+  error: "خطأ"
+  warning: "تحذير"
+  info: "معلومات"
+  no_permission: "ليس لديك صلاحية لاستخدام هذا الأمر."
+  missing_argument: "المعامل المطلوب مفقود: {param}"
+  invalid_amount: "الكمية غير صالحة"
+  invalid_duration: "المدة غير صالحة"
+  none: "لا يوجد"
+  unknown: "غير معروف"
+  not_set: "غير محدد"
+
+language:
+  set_success_title: "🌐 تم تحديث اللغة"
+  set_success: "تم تحديث لغة البوت إلى **{lang_name} ({lang_code})** بنجاح!"
+  current: "اللغة الحالية: **{lang_name} ({lang_code})**"
+  invalid: "خيار اللغة غير صالحة. اللغات المدعومة: **الإنجليزي (en)**، **العربي (ar)**"
+  command_desc: "تغيير إعداد لغة البوت (للإدارة)"
+
+admin:
+  reload_desc: "إعادة تحميل إضافة (Cog)"
+  reload_success_title: "تم إعادة تحميل الإضافة"
+  reload_success: "تم إعادة تحميل الإضافة **{cog}** بنجاح"
+  reload_not_loaded: "الإضافة **{cog}** غير محملة"
+  reload_not_found: "الإضافة **{cog}** غير موجودة"
+  reload_failed: "فشل إعادة التحميل: {error}"
+  
+  sync_desc: "مزامنة أوامر السلاش (Slash Commands)"
+  sync_success_title: "تمت مزامنة الأوامر"
+  sync_success: "تمت مزامنة **{count}** من الأوامر بنجاح"
+  sync_failed: "فشلت المزامنة: {error}"
+  
+  modules_desc: "عرض وتفعيل/تعطيل الوحدات"
+  modules_title: "📦 وحدات البوت"
+  modules_empty: "لا توجد وحدات مُعدة"
+  
+  botinfo_desc: "عرض معلومات البوت"
+  botinfo_title: "🤖 معلومات Logiq"
+  
+  setlogchannel_desc: "تحديد قناة السجلات"
+  setlogchannel_success_title: "تم تعيين قناة السجلات"
+  setlogchannel_success: "سيتم إرسال سجلات الإشراف إلى {channel}"
+  
+  config_desc: "عرض إعدادات السيرفر"
+  config_title: "⚙️ إعدادات السيرفر"
+  config_none: "لا توجد إعدادات لهذا السيرفر بعد"
+  
+  purge_desc: "حذف الرسائل بالجملة"
+  purge_success_title: "تم حذف الرسائل"
+  purge_success: "تم حذف **{count}** رسالة"
+  purge_invalid: "العدد يجب أن يكون بين 1 و 100"
+  purge_no_permission: "ليس لدي صلاحية لحذف الرسائل"
+
+utility:
+  poll_desc: "إنشاء تصويت"
+  poll_results: "📊 نتائج التصويت"
+  poll_total_votes: "إجمالي الأصوات: {count}"
+  poll_invalid_duration: "المدة يجب أن تكون بين دقيقة واحدة وأسبوع واحد"
+  poll_ends_in: "ينتهي التصويت خلال {duration} دقيقة | إجمالي الأصوات: {count}"
+  
+  remind_desc: "تعيين تذكير"
+  remind_success_title: "تم تعيين التذكير"
+  remind_success: "سأقوم بتذكيرك خلال **{duration}**\n\nالرسالة: {message}"
+  remind_invalid_duration: "يرجى تحديد مدة صالحة (مثال: 1h, 30m, 2d)"
+  remind_too_long: "الحد الأقصى لمدة التذكير هو سنة واحدة"
+  remind_notification_title: "⏰ تذكير"
+  
+  serverstats_desc: "عرض إحصائيات السيرفر"
+  serverstats_title: "📊 إحصائيات السيرفر - {name}"
+  total_members: "👥 إجمالي الأعضاء"
+  humans: "🙋 الأعضاء"
+  bots: "🤖 البوتات"
+  text_channels: "💬 القنوات النصية"
+  voice_channels: "🔊 القنوات الصوتية"
+  roles: "🎭 الرتب"
+  owner: "👑 الماليك"
+  created: "📅 تاريخ الإنشاء"
+  boost_level: "🚀 مستوى الترقية (Boost)"
+  
+  userinfo_desc: "الحصول على معلومات المستخدم"
+  userinfo_title: "معلومات المستخدم - {name}"
+  username: "اسم المستخدم"
+  id: "المعرف (ID)"
+  nickname: "اللقب"
+  account_created: "تاريخ إنشاء الحساب"
+  joined_server: "تاريخ الانضمام للسيرفر"
+  top_role: "أعلى رتبة"
+  
+  avatar_desc: "عرض صورة المستخدم الشخصية"
+  avatar_title: "الصورة الشخصية - {name}"
+
+moderation:
+  action_title: "🔨 {action}"
+  action_desc: "تم تنفيذ {action} بحق {user}"
+  reason: "السبب"
+  moderator: "المشرف"
+  target_user: "المستخدم"
+
+leveling:
+  level_up_title: "🎉 ارتفاع المستوى!"
+  level_up_desc: "{user} وصل للتو إلى **المستوى {level}**!"
+  rank_title: "📊 بطاقة الرتبة - {user}"
+  rank: "الرتبة"
+  level: "المستوى"
+  xp: "الخبرة (XP)"
+  progress: "التقدم"
+  leaderboard_title: "🏆 {title}"
+
+economy:
+  balance_title: "رصيد {symbol}"
+  balance_desc: "رصيد {user}"
+  amount: "المبلغ"
+
+tickets:
+  created_title: "🎫 تم إنشاء التذكرة"
+  created_desc: "تم إنشاء تذكرة الدعم الخاصة بك!"
+  ticket_id: "معرف التذكرة"
+  category: "الفئة"
+
+verification:
+  prompt_title: "🔐 التحقق مطلوب"
+  prompt_desc: "انقر على الزر أدناه للتحقق والحصول على الوصول إلى السيرفر."
+  prompt_footer: "أكمل التحقق لفتح جميع القنوات"
