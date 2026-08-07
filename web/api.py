@@ -21,7 +21,8 @@ def create_app(bot) -> FastAPI:
     app = FastAPI(
         title="Logiq API",
         description="REST API for Logiq Discord Bot",
-        version="1.0.0"
+        version="1.0.0",
+        port=8005
     )
 
     # CORS middleware
