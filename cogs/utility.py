@@ -15,8 +15,10 @@ from utils.embeds import EmbedFactory, EmbedColor
 from utils.converters import TimeConverter
 from utils.permissions import is_admin
 from database.db_manager import DatabaseManager
+from utils.i18n import t
 
 logger = logging.getLogger(__name__)
+
 
 
 class PollView(discord.ui.View):
@@ -41,11 +43,11 @@ class PollView(discord.ui.View):
             description += f"{i + 1}. {option}\n{bar} {vote_count} votes ({percentage:.1f}%)\n\n"
 
         embed = EmbedFactory.create(
-            title="📊 Poll Results",
+            title=t("utility.poll_results"),
             description=description,
             color=EmbedColor.INFO
         )
-        embed.set_footer(text=f"Total votes: {total_votes}")
+        embed.set_footer(text=t("utility.poll_total_votes", count=total_votes))
         return embed
 
     @discord.ui.button(label="1", style=discord.ButtonStyle.primary, custom_id="poll_1")
@@ -67,7 +69,7 @@ class PollView(discord.ui.View):
     async def _vote(self, interaction: discord.Interaction, option_index: int):
         """Handle vote"""
         if option_index >= len(self.options):
-            await interaction.response.send_message("Invalid option", ephemeral=True)
+            await interaction.response.send_message(t("common.error"), ephemeral=True)
             return
 
         user_id = interaction.user.id
@@ -111,7 +113,7 @@ class Utility(commands.Cog):
                         if channel:
                             user = await self.bot.fetch_user(reminder['user_id'])
                             embed = EmbedFactory.info(
-                                "⏰ Reminder",
+                                t("utility.remind_notification_title"),
                                 f"{user.mention} {reminder['message']}"
                             )
                             await channel.send(embed=embed)
@@ -154,7 +156,7 @@ class Utility(commands.Cog):
 
         if duration < 1 or duration > 10080:  # Max 1 week
             await interaction.response.send_message(
-                embed=EmbedFactory.error("Invalid Duration", "Duration must be between 1 minute and 1 week"),
+                embed=EmbedFactory.error(t("common.error"), t("utility.poll_invalid_duration")),
                 ephemeral=True
             )
             return
@@ -167,7 +169,7 @@ class Utility(commands.Cog):
                 view.children[i].disabled = True
 
         embed = view.get_results_embed()
-        embed.set_footer(text=f"Poll ends in {duration} minutes | Total votes: 0")
+        embed.set_footer(text=t("utility.poll_ends_in", duration=duration, count=0))
 
         await interaction.response.send_message(embed=embed, view=view)
         logger.info(f"{interaction.user} created poll in {interaction.guild}")
@@ -183,14 +185,14 @@ class Utility(commands.Cog):
         seconds = TimeConverter.parse(duration)
         if not seconds:
             await interaction.response.send_message(
-                embed=EmbedFactory.error("Invalid Duration", "Please provide a valid duration (e.g., 1h, 30m, 2d)"),
+                embed=EmbedFactory.error(t("common.error"), t("utility.remind_invalid_duration")),
                 ephemeral=True
             )
             return
 
         if seconds > 31536000:  # Max 1 year
             await interaction.response.send_message(
-                embed=EmbedFactory.error("Duration Too Long", "Maximum reminder duration is 1 year"),
+                embed=EmbedFactory.error(t("common.error"), t("utility.remind_too_long")),
                 ephemeral=True
             )
             return
@@ -209,9 +211,8 @@ class Utility(commands.Cog):
         await self.db.create_reminder(reminder_data)
 
         embed = EmbedFactory.success(
-            "Reminder Set",
-            f"I'll remind you in **{TimeConverter.format_seconds(seconds)}**\n\n"
-            f"Message: {message}"
+            t("utility.remind_success_title"),
+            t("utility.remind_success", duration=TimeConverter.format_seconds(seconds), message=message)
         )
         await interaction.response.send_message(embed=embed)
         logger.info(f"{interaction.user} set reminder in {interaction.guild}")
@@ -231,19 +232,19 @@ class Utility(commands.Cog):
         roles = len(guild.roles)
 
         embed = EmbedFactory.create(
-            title=f"📊 Server Statistics - {guild.name}",
+            title=t("utility.serverstats_title", name=guild.name),
             color=EmbedColor.INFO,
             thumbnail=guild.icon.url if guild.icon else None,
             fields=[
-                {"name": "👥 Total Members", "value": str(total_members), "inline": True},
-                {"name": "🙋 Humans", "value": str(humans), "inline": True},
-                {"name": "🤖 Bots", "value": str(bots), "inline": True},
-                {"name": "💬 Text Channels", "value": str(text_channels), "inline": True},
-                {"name": "🔊 Voice Channels", "value": str(voice_channels), "inline": True},
-                {"name": "🎭 Roles", "value": str(roles), "inline": True},
-                {"name": "👑 Owner", "value": guild.owner.mention if guild.owner else "Unknown", "inline": True},
-                {"name": "📅 Created", "value": guild.created_at.strftime("%Y-%m-%d"), "inline": True},
-                {"name": "🚀 Boost Level", "value": f"Level {guild.premium_tier}", "inline": True}
+                {"name": t("utility.total_members"), "value": str(total_members), "inline": True},
+                {"name": t("utility.humans"), "value": str(humans), "inline": True},
+                {"name": t("utility.bots"), "value": str(bots), "inline": True},
+                {"name": t("utility.text_channels"), "value": str(text_channels), "inline": True},
+                {"name": t("utility.voice_channels"), "value": str(voice_channels), "inline": True},
+                {"name": t("utility.roles"), "value": str(roles), "inline": True},
+                {"name": t("utility.owner"), "value": guild.owner.mention if guild.owner else t("common.unknown"), "inline": True},
+                {"name": t("utility.created"), "value": guild.created_at.strftime("%Y-%m-%d"), "inline": True},
+                {"name": t("utility.boost_level"), "value": f"Level {guild.premium_tier}", "inline": True}
             ]
         )
 
@@ -257,22 +258,22 @@ class Utility(commands.Cog):
         target = user or interaction.user
 
         roles = [role.mention for role in target.roles[1:]]  # Exclude @everyone
-        roles_str = ", ".join(roles[:10]) if roles else "None"
+        roles_str = ", ".join(roles[:10]) if roles else t("common.none")
         if len(roles) > 10:
             roles_str += f" (+{len(roles) - 10} more)"
 
         embed = EmbedFactory.create(
-            title=f"User Information - {target.display_name}",
+            title=t("utility.userinfo_title", name=target.display_name),
             color=target.color if target.color.value != 0 else EmbedColor.INFO,
             thumbnail=target.display_avatar.url,
             fields=[
-                {"name": "Username", "value": str(target), "inline": True},
-                {"name": "ID", "value": str(target.id), "inline": True},
-                {"name": "Nickname", "value": target.nick or "None", "inline": True},
-                {"name": "Account Created", "value": target.created_at.strftime("%Y-%m-%d"), "inline": True},
-                {"name": "Joined Server", "value": target.joined_at.strftime("%Y-%m-%d") if target.joined_at else "Unknown", "inline": True},
-                {"name": "Top Role", "value": target.top_role.mention, "inline": True},
-                {"name": f"Roles ({len(roles)})", "value": roles_str, "inline": False}
+                {"name": t("utility.username"), "value": str(target), "inline": True},
+                {"name": t("utility.id"), "value": str(target.id), "inline": True},
+                {"name": t("utility.nickname"), "value": target.nick or t("common.none"), "inline": True},
+                {"name": t("utility.account_created"), "value": target.created_at.strftime("%Y-%m-%d"), "inline": True},
+                {"name": t("utility.joined_server"), "value": target.joined_at.strftime("%Y-%m-%d") if target.joined_at else t("common.unknown"), "inline": True},
+                {"name": t("utility.top_role"), "value": target.top_role.mention, "inline": True},
+                {"name": f"{t('utility.roles')} ({len(roles)})", "value": roles_str, "inline": False}
             ]
         )
 
@@ -286,12 +287,13 @@ class Utility(commands.Cog):
         target = user or interaction.user
 
         embed = EmbedFactory.create(
-            title=f"Avatar - {target.display_name}",
+            title=t("utility.avatar_title", name=target.display_name),
             color=EmbedColor.INFO,
             image=target.display_avatar.url
         )
 
         await interaction.response.send_message(embed=embed)
+
 
 
 async def setup(bot: commands.Bot):

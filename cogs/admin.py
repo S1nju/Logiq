@@ -34,24 +34,32 @@ class Admin(commands.Cog):
     ])
     @is_admin()
     async def set_language(self, interaction: discord.Interaction, language: app_commands.Choice[str]):
-        """Set bot language state"""
+        """Set bot language state (Slash Command)"""
         lang_code = language.value
+        await self._perform_set_language(interaction.response.send_message, lang_code, ephemeral=True)
+
+    @commands.command(name="setlanguage", aliases=["lang", "setlang"])
+    @commands.has_permissions(administrator=True)
+    async def set_language_prefix(self, ctx: commands.Context, lang_code: str):
+        """Set bot language state (Prefix Command: !setlanguage en|ar)"""
+        await self._perform_set_language(ctx.send, lang_code.lower())
+
+    async def _perform_set_language(self, send_func, lang_code: str, ephemeral: bool = False):
         success = i18n.set_language(lang_code)
-        
         if success:
             lang_name = i18n.get_language_name(lang_code)
             embed = EmbedFactory.success(
                 t("language.set_success_title", lang=lang_code),
                 t("language.set_success", lang=lang_code, lang_name=lang_name, lang_code=lang_code)
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            logger.info(f"{interaction.user} changed bot language to {lang_code}")
+            await send_func(embed=embed, ephemeral=ephemeral) if ephemeral else await send_func(embed=embed)
         else:
             embed = EmbedFactory.error(
                 t("common.error"),
                 t("language.invalid")
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            await send_func(embed=embed, ephemeral=ephemeral) if ephemeral else await send_func(embed=embed)
+
 
 
     @app_commands.command(name="reload", description="Reload a cog")
@@ -62,24 +70,24 @@ class Admin(commands.Cog):
         try:
             await self.bot.reload_extension(f"cogs.{cog}")
             embed = EmbedFactory.success(
-                "Cog Reloaded",
-                f"Successfully reloaded **{cog}**"
+                t("admin.reload_success_title"),
+                t("admin.reload_success", cog=cog)
             )
             await interaction.response.send_message(embed=embed, ephemeral=True)
             logger.info(f"{interaction.user} reloaded cog {cog}")
         except commands.ExtensionNotLoaded:
             await interaction.response.send_message(
-                embed=EmbedFactory.error("Error", f"Cog **{cog}** is not loaded"),
+                embed=EmbedFactory.error(t("common.error"), t("admin.reload_not_loaded", cog=cog)),
                 ephemeral=True
             )
         except commands.ExtensionNotFound:
             await interaction.response.send_message(
-                embed=EmbedFactory.error("Error", f"Cog **{cog}** not found"),
+                embed=EmbedFactory.error(t("common.error"), t("admin.reload_not_found", cog=cog)),
                 ephemeral=True
             )
         except Exception as e:
             await interaction.response.send_message(
-                embed=EmbedFactory.error("Error", f"Failed to reload: {str(e)}"),
+                embed=EmbedFactory.error(t("common.error"), t("admin.reload_failed", error=str(e))),
                 ephemeral=True
             )
             logger.error(f"Error reloading cog {cog}: {e}", exc_info=True)
@@ -87,23 +95,38 @@ class Admin(commands.Cog):
     @app_commands.command(name="sync", description="Sync slash commands")
     @is_admin()
     async def sync(self, interaction: discord.Interaction):
-        """Sync command tree"""
+        """Sync command tree (Slash Command)"""
         await interaction.response.defer(ephemeral=True)
-
         try:
             synced = await self.bot.tree.sync()
             embed = EmbedFactory.success(
-                "Commands Synced",
-                f"Successfully synced **{len(synced)}** commands"
+                t("admin.sync_success_title"),
+                t("admin.sync_success", count=len(synced))
             )
             await interaction.followup.send(embed=embed, ephemeral=True)
             logger.info(f"{interaction.user} synced commands")
         except Exception as e:
             await interaction.followup.send(
-                embed=EmbedFactory.error("Error", f"Failed to sync: {str(e)}"),
+                embed=EmbedFactory.error(t("common.error"), t("admin.sync_failed", error=str(e))),
                 ephemeral=True
             )
             logger.error(f"Error syncing commands: {e}", exc_info=True)
+
+    @commands.command(name="sync")
+    @commands.has_permissions(administrator=True)
+    async def sync_prefix(self, ctx: commands.Context):
+        """Sync command tree (Prefix Command: !sync)"""
+        try:
+            synced = await self.bot.tree.sync()
+            embed = EmbedFactory.success(
+                t("admin.sync_success_title"),
+                t("admin.sync_success", count=len(synced))
+            )
+            await ctx.send(embed=embed)
+            logger.info(f"{ctx.author} synced commands via prefix command")
+        except Exception as e:
+            await ctx.send(embed=EmbedFactory.error(t("common.error"), t("admin.sync_failed", error=str(e))))
+            logger.error(f"Error syncing commands via prefix command: {e}", exc_info=True)
 
     @app_commands.command(name="modules", description="View and toggle modules")
     @is_admin()
@@ -118,8 +141,8 @@ class Admin(commands.Cog):
             description += f"**{module_name.title()}**: {status}\n"
 
         embed = EmbedFactory.create(
-            title="📦 Bot Modules",
-            description=description or "No modules configured",
+            title=t("admin.modules_title"),
+            description=description or t("admin.modules_empty"),
             color=EmbedColor.INFO
         )
 
@@ -130,7 +153,7 @@ class Admin(commands.Cog):
         """Display bot information"""
         # Calculate uptime
         uptime = discord.utils.utcnow() - self.bot.start_time if hasattr(self.bot, 'start_time') else None
-        uptime_str = str(uptime).split('.')[0] if uptime else "Unknown"
+        uptime_str = str(uptime).split('.')[0] if uptime else t("common.unknown")
 
         # Get stats
         total_guilds = len(self.bot.guilds)
@@ -138,18 +161,18 @@ class Admin(commands.Cog):
         total_channels = sum(len(g.channels) for g in self.bot.guilds)
 
         embed = EmbedFactory.create(
-            title="🤖 Logiq Information",
+            title=t("admin.botinfo_title"),
             color=EmbedColor.PRIMARY,
             thumbnail=self.bot.user.display_avatar.url if self.bot.user else None,
             fields=[
-                {"name": "📊 Servers", "value": str(total_guilds), "inline": True},
-                {"name": "👥 Users", "value": f"{total_users:,}", "inline": True},
-                {"name": "📺 Channels", "value": str(total_channels), "inline": True},
-                {"name": "⏰ Uptime", "value": uptime_str, "inline": True},
-                {"name": "🐍 Python Version", "value": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}", "inline": True},
-                {"name": "📚 Discord.py", "value": discord.__version__, "inline": True},
-                {"name": "💾 Database", "value": "MongoDB (Motor)", "inline": True},
-                {"name": "🔗 Latency", "value": f"{round(self.bot.latency * 1000)}ms", "inline": True}
+                {"name": t("utility.serverstats_title", name="Servers"), "value": str(total_guilds), "inline": True},
+                {"name": t("utility.total_members"), "value": f"{total_users:,}", "inline": True},
+                {"name": t("utility.text_channels"), "value": str(total_channels), "inline": True},
+                {"name": t("phrases.Uptime"), "value": uptime_str, "inline": True},
+                {"name": t("phrases.Python Version"), "value": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}", "inline": True},
+                {"name": t("phrases.Discord.py"), "value": discord.__version__, "inline": True},
+                {"name": t("phrases.Database"), "value": "MongoDB (Motor)", "inline": True},
+                {"name": t("phrases.Latency"), "value": f"{round(self.bot.latency * 1000)}ms", "inline": True}
             ]
         )
 
@@ -167,8 +190,8 @@ class Admin(commands.Cog):
         await self.db.update_guild(interaction.guild.id, {'log_channel': channel.id})
 
         embed = EmbedFactory.success(
-            "Log Channel Set",
-            f"Moderation logs will be sent to {channel.mention}"
+            t("admin.setlogchannel_success_title"),
+            t("admin.setlogchannel_success", channel=channel.mention)
         )
         await interaction.response.send_message(embed=embed)
         logger.info(f"Log channel set to {channel} in {interaction.guild}")
@@ -181,23 +204,24 @@ class Admin(commands.Cog):
 
         if not guild_config:
             await interaction.response.send_message(
-                embed=EmbedFactory.info("No Configuration", "Server has no configuration yet"),
+                embed=EmbedFactory.info(t("phrases.No Configuration"), t("admin.config_none")),
                 ephemeral=True
             )
             return
 
-        log_channel = f"<#{guild_config.get('log_channel')}>" if guild_config.get('log_channel') else "Not set"
-        welcome_channel = f"<#{guild_config.get('welcome_channel')}>" if guild_config.get('welcome_channel') else "Not set"
-        verified_role = f"<@&{guild_config.get('verified_role')}>" if guild_config.get('verified_role') else "Not set"
+        not_set = t("common.not_set")
+        log_channel = f"<#{guild_config.get('log_channel')}>" if guild_config.get('log_channel') else not_set
+        welcome_channel = f"<#{guild_config.get('welcome_channel')}>" if guild_config.get('welcome_channel') else not_set
+        verified_role = f"<@&{guild_config.get('verified_role')}>" if guild_config.get('verified_role') else not_set
 
         embed = EmbedFactory.create(
-            title="⚙️ Server Configuration",
+            title=t("admin.config_title"),
             color=EmbedColor.INFO,
             fields=[
-                {"name": "Log Channel", "value": log_channel, "inline": False},
-                {"name": "Welcome Channel", "value": welcome_channel, "inline": False},
-                {"name": "Verified Role", "value": verified_role, "inline": False},
-                {"name": "Verification Type", "value": guild_config.get('verification_type', 'button'), "inline": True}
+                {"name": t("phrases.Log Channel"), "value": log_channel, "inline": False},
+                {"name": t("phrases.Welcome Channel"), "value": welcome_channel, "inline": False},
+                {"name": t("phrases.Verified Role"), "value": verified_role, "inline": False},
+                {"name": t("phrases.Verification Type"), "value": guild_config.get('verification_type', 'button'), "inline": True}
             ]
         )
 
@@ -210,7 +234,7 @@ class Admin(commands.Cog):
         """Purge messages"""
         if amount < 1 or amount > 100:
             await interaction.response.send_message(
-                embed=EmbedFactory.error("Invalid Amount", "Amount must be between 1 and 100"),
+                embed=EmbedFactory.error(t("common.invalid_amount"), t("admin.purge_invalid")),
                 ephemeral=True
             )
             return
@@ -218,16 +242,17 @@ class Admin(commands.Cog):
         try:
             deleted = await interaction.channel.purge(limit=amount)
             embed = EmbedFactory.success(
-                "Messages Purged",
-                f"Deleted **{len(deleted)}** messages"
+                t("admin.purge_success_title"),
+                t("admin.purge_success", count=len(deleted))
             )
             await interaction.response.send_message(embed=embed, ephemeral=True, delete_after=5)
             logger.info(f"{interaction.user} purged {len(deleted)} messages in {interaction.channel}")
         except discord.Forbidden:
             await interaction.response.send_message(
-                embed=EmbedFactory.error("Error", "I don't have permission to delete messages"),
+                embed=EmbedFactory.error(t("common.error"), t("admin.purge_no_permission")),
                 ephemeral=True
             )
+
 
 
 async def setup(bot: commands.Bot):

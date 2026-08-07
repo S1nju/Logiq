@@ -116,12 +116,22 @@ class Logiq(commands.Bot):
 
         await self.change_presence(activity=activity, status=discord.Status.online)
 
-        # Sync commands
+        # Sync slash commands globally (clear any duplicate per-guild overrides)
         try:
+            for guild in self.guilds:
+                try:
+                    self.tree.clear_commands(guild=guild)
+                    await self.tree.sync(guild=guild)
+                except Exception:
+                    pass
+
             synced = await self.tree.sync()
-            self.logger.info(f"Synced {len(synced)} commands")
+            self.logger.info(f"Successfully synced {len(synced)} global slash commands")
         except Exception as e:
             self.logger.error(f"Failed to sync commands: {e}", exc_info=True)
+
+
+
 
         self.logger.info("Bot is ready!")
 

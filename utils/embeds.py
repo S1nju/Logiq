@@ -1,11 +1,13 @@
 """
 Embed utilities for Logiq
-Creates consistent, themed embeds
+Creates consistent, themed embeds with i18n support
 """
 
 import discord
 from typing import Optional, List, Dict, Any
 from datetime import datetime
+
+from utils.i18n import t
 
 
 class EmbedColor:
@@ -36,7 +38,7 @@ class EmbedFactory:
         timestamp: bool = True
     ) -> discord.Embed:
         """
-        Create a custom embed
+        Create a custom embed with automatic i18n translation of strings
 
         Args:
             title: Embed title
@@ -51,15 +53,18 @@ class EmbedFactory:
         Returns:
             Configured Discord embed
         """
+        translated_title = t(title) if isinstance(title, str) else title
+        translated_desc = t(description) if isinstance(description, str) else description
+
         embed = discord.Embed(
-            title=title,
-            description=description,
+            title=translated_title,
+            description=translated_desc,
             color=color,
             timestamp=datetime.utcnow() if timestamp else None
         )
 
         if footer:
-            embed.set_footer(text=footer)
+            embed.set_footer(text=t(footer) if isinstance(footer, str) else footer)
 
         if thumbnail:
             embed.set_thumbnail(url=thumbnail)
@@ -69,9 +74,11 @@ class EmbedFactory:
 
         if fields:
             for field in fields:
+                name = field.get("name", "")
+                val = field.get("value", "")
                 embed.add_field(
-                    name=field.get("name", ""),
-                    value=field.get("value", ""),
+                    name=t(name) if isinstance(name, str) else name,
+                    value=t(val) if isinstance(val, str) else val,
                     inline=field.get("inline", True)
                 )
 
@@ -80,38 +87,47 @@ class EmbedFactory:
     @staticmethod
     def success(title: str, description: str) -> discord.Embed:
         """Create success embed"""
+        t_title = t(title)
+        t_desc = t(description)
         return EmbedFactory.create(
-            title=f"✅ {title}",
-            description=description,
+            title=f"✅ {t_title}",
+            description=t_desc,
             color=EmbedColor.SUCCESS
         )
 
     @staticmethod
     def error(title: str, description: str) -> discord.Embed:
         """Create error embed"""
+        t_title = t(title)
+        t_desc = t(description)
         return EmbedFactory.create(
-            title=f"❌ {title}",
-            description=description,
+            title=f"❌ {t_title}",
+            description=t_desc,
             color=EmbedColor.ERROR
         )
 
     @staticmethod
     def warning(title: str, description: str) -> discord.Embed:
         """Create warning embed"""
+        t_title = t(title)
+        t_desc = t(description)
         return EmbedFactory.create(
-            title=f"⚠️ {title}",
-            description=description,
+            title=f"⚠️ {t_title}",
+            description=t_desc,
             color=EmbedColor.WARNING
         )
 
     @staticmethod
     def info(title: str, description: str) -> discord.Embed:
         """Create info embed"""
+        t_title = t(title)
+        t_desc = t(description)
         return EmbedFactory.create(
-            title=f"ℹ️ {title}",
-            description=description,
+            title=f"ℹ️ {t_title}",
+            description=t_desc,
             color=EmbedColor.INFO
         )
+
 
     @staticmethod
     def ai_response(message: str, model: str = "AI") -> discord.Embed:
@@ -127,13 +143,13 @@ class EmbedFactory:
     def level_up(user: discord.Member, new_level: int, xp: int) -> discord.Embed:
         """Create level up embed"""
         return EmbedFactory.create(
-            title="🎉 Level Up!",
-            description=f"{user.mention} just reached **Level {new_level}**!",
+            title=t("leveling.level_up_title"),
+            description=t("leveling.level_up_desc", user=user.mention, level=new_level),
             color=EmbedColor.LEVELING,
             thumbnail=user.display_avatar.url,
             fields=[
-                {"name": "Level", "value": str(new_level), "inline": True},
-                {"name": "Total XP", "value": str(xp), "inline": True}
+                {"name": t("leveling.level"), "value": str(new_level), "inline": True},
+                {"name": t("leveling.xp"), "value": str(xp), "inline": True}
             ]
         )
 
@@ -144,14 +160,14 @@ class EmbedFactory:
         progress_bar = "█" * int(progress / 10) + "░" * (10 - int(progress / 10))
 
         return EmbedFactory.create(
-            title=f"📊 Rank Card - {user.display_name}",
+            title=t("leveling.rank_title", user=user.display_name),
             color=EmbedColor.LEVELING,
             thumbnail=user.display_avatar.url,
             fields=[
-                {"name": "Rank", "value": f"#{rank}", "inline": True},
-                {"name": "Level", "value": str(level), "inline": True},
-                {"name": "XP", "value": f"{xp % next_level_xp}/{next_level_xp}", "inline": True},
-                {"name": "Progress", "value": f"{progress_bar} {progress:.1f}%", "inline": False}
+                {"name": t("leveling.rank"), "value": f"#{rank}", "inline": True},
+                {"name": t("leveling.level"), "value": str(level), "inline": True},
+                {"name": t("leveling.xp"), "value": f"{xp % next_level_xp}/{next_level_xp}", "inline": True},
+                {"name": t("leveling.progress"), "value": f"{progress_bar} {progress:.1f}%", "inline": False}
             ]
         )
 
@@ -159,12 +175,12 @@ class EmbedFactory:
     def economy_balance(user: discord.Member, balance: int, currency_symbol: str = "💎") -> discord.Embed:
         """Create balance embed"""
         return EmbedFactory.create(
-            title=f"{currency_symbol} Balance",
-            description=f"{user.mention}'s balance",
+            title=t("economy.balance_title", symbol=currency_symbol),
+            description=t("economy.balance_desc", user=user.mention),
             color=EmbedColor.ECONOMY,
             thumbnail=user.display_avatar.url,
             fields=[
-                {"name": "Amount", "value": f"{currency_symbol} {balance:,}", "inline": False}
+                {"name": t("economy.amount"), "value": f"{currency_symbol} {balance:,}", "inline": False}
             ]
         )
 
@@ -177,13 +193,13 @@ class EmbedFactory:
     ) -> discord.Embed:
         """Create moderation action embed"""
         return EmbedFactory.create(
-            title=f"🔨 {action}",
-            description=f"{user.mention} has been {action.lower()}",
+            title=t("moderation.action_title", action=action),
+            description=t("moderation.action_desc", user=user.mention, action=action.lower()),
             color=EmbedColor.WARNING,
             fields=[
-                {"name": "User", "value": f"{user.mention} ({user.id})", "inline": True},
-                {"name": "Moderator", "value": moderator.mention, "inline": True},
-                {"name": "Reason", "value": reason, "inline": False}
+                {"name": t("moderation.target_user"), "value": f"{user.mention} ({user.id})", "inline": True},
+                {"name": t("moderation.moderator"), "value": moderator.mention, "inline": True},
+                {"name": t("moderation.reason"), "value": reason, "inline": False}
             ]
         )
 
@@ -191,22 +207,22 @@ class EmbedFactory:
     def verification_prompt() -> discord.Embed:
         """Create verification prompt embed"""
         return EmbedFactory.create(
-            title="🔐 Verification Required",
-            description="Click the button below to verify and gain access to the server.",
+            title=t("verification.prompt_title"),
+            description=t("verification.prompt_desc"),
             color=EmbedColor.PRIMARY,
-            footer="Complete verification to unlock all channels"
+            footer=t("verification.prompt_footer")
         )
 
     @staticmethod
     def ticket_created(ticket_id: str, category: str) -> discord.Embed:
         """Create ticket created embed"""
         return EmbedFactory.create(
-            title="🎫 Ticket Created",
-            description="Your support ticket has been created!",
+            title=t("tickets.created_title"),
+            description=t("tickets.created_desc"),
             color=EmbedColor.SUCCESS,
             fields=[
-                {"name": "Ticket ID", "value": ticket_id, "inline": True},
-                {"name": "Category", "value": category, "inline": True}
+                {"name": t("tickets.ticket_id"), "value": ticket_id, "inline": True},
+                {"name": t("tickets.category"), "value": category, "inline": True}
             ]
         )
 
@@ -225,6 +241,7 @@ class EmbedFactory:
 
         return EmbedFactory.create(
             title=f"🏆 {title}",
-            description=description or "No entries yet",
+            description=description or t("common.none"),
             color=color
         )
+

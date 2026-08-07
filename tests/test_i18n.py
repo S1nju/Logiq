@@ -64,6 +64,28 @@ class TestI18n(unittest.TestCase):
         self.assertEqual(t("common.success", lang="en"), "Success")
         self.assertEqual(t("common.success", lang="ar"), "نجاح")
 
+    def test_embed_factory_translation(self):
+        """Test EmbedFactory translation keys for verification and tickets"""
+        from utils.i18n import i18n
+        i18n.set_language("en")
+        self.assertEqual(t("verification.prompt_title"), "🔐 Verification Required")
+
+        i18n.set_language("ar")
+        self.assertEqual(t("verification.prompt_title"), "🔐 التحقق مطلوب")
+
+    def test_phrase_auto_translation(self):
+        """Test phrase auto translation fallback for English literals"""
+        from utils.i18n import i18n
+        i18n.set_language("ar")
+        self.assertEqual(t("Commands Synced"), "تمت مزامنة الأوامر")
+        self.assertEqual(t("Cog Reloaded"), "تم إعادة تحميل الإضافة")
+        self.assertEqual(t("⚠️ No Warnings"), "⚠️ لا توجد تحذيرات")
+
+
+
+
+
+
 
 if __name__ == '__main__':
     unittest.main()

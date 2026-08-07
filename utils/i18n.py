@@ -64,8 +64,8 @@ class I18nManager:
 
     def get(self, key_path: str, lang: Optional[str] = None, **kwargs) -> str:
         """
-        Get translated string for key path.
-        Example: get('admin.reload_success', cog='moderation')
+        Get translated string for key path or direct text phrase.
+        Example: get('admin.reload_success', cog='moderation') or get('Commands Synced')
         """
         target_lang = lang if (lang and lang in SUPPORTED_LANGUAGES) else self.current_language
         
@@ -87,17 +87,40 @@ class I18nManager:
         return str(translation)
 
     def _resolve_key(self, lang: str, key_path: str) -> Optional[Any]:
-        """Traverse nested dict for key_path e.g. 'admin.reload_success'"""
+        """Traverse nested dict for key_path e.g. 'admin.reload_success' or phrase lookup"""
         data = self.translations.get(lang, {})
-        keys = key_path.split('.')
         
+        # 1. Direct dictionary traversal
+        keys = key_path.split('.')
         curr = data
+        found = True
         for k in keys:
             if isinstance(curr, dict) and k in curr:
                 curr = curr[k]
             else:
-                return None
-        return curr
+                found = False
+                break
+
+        if found:
+            return curr
+
+        # 2. Phrase lookup in 'phrases' dict for target language
+        phrases = data.get("phrases", {})
+        if isinstance(phrases, dict) and key_path in phrases:
+            return phrases[key_path]
+
+        # 3. Clean leading emojis for phrase lookup (e.g., "⚠️ No Warnings" -> "No Warnings")
+        clean_key = key_path
+        for emoji in ["⚠️", "ℹ️", "🤖", "📦", "⚙️", "🔨", "🔐", "🎫", "🏆", "📊", "✅", "❌", "💬", "🔊", "🎭", "👑", "📅", "🚀", "🙋", "👥", "⏰", "🐍", "📚", "💾", "🔗"]:
+            clean_key = clean_key.replace(emoji, "").strip()
+
+        if clean_key and clean_key != key_path and isinstance(phrases, dict) and clean_key in phrases:
+            prefix = key_path[:len(key_path) - len(clean_key)].strip()
+            translated_phrase = phrases[clean_key]
+            return f"{prefix} {translated_phrase}".strip() if prefix else translated_phrase
+
+        return None
+
 
     def set_language(self, lang_code: str, config_path: str = "config.yaml") -> bool:
         """
