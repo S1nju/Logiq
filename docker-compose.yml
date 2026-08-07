@@ -13,6 +13,8 @@ services:
     depends_on:
       mongodb:
         condition: service_healthy
+      lavalink:
+        condition: service_started
 
   mongodb:
     image: mongo:latest

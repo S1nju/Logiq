@@ -93,22 +93,30 @@ class Music(commands.Cog):
         self.config = config
         self.module_config = config.get('modules', {}).get('music', {})
 
+    async def connect_wavelink_node(self):
+        """Connect to Wavelink node with retry logic."""
+        while not self.bot.is_closed():
+            try:
+                if wavelink.Pool.nodes and any(n.status == wavelink.NodeStatus.CONNECTED for n in wavelink.Pool.nodes.values()):
+                    break
+                logger.info("Attempting to connect to Wavelink Node (http://127.0.0.1:2333)...")
+                nodes = [wavelink.Node(uri="http://127.0.0.1:2333", password="youshallnotpass")]
+                await wavelink.Pool.connect(nodes=nodes, client=self.bot, cache_capacity=100)
+                logger.info("Successfully connected to Wavelink Node!")
+                break
+            except Exception as e:
+                logger.warning(f"Wavelink node connection pending (Lavalink may still be starting): {e}")
+                await asyncio.sleep(5)
+
     async def cog_load(self):
         """Called when the cog is loaded."""
-        nodes = [wavelink.Node(uri="http://127.0.0.1:2333", password="youshallnotpass")]
-        try:
-            await wavelink.Pool.connect(nodes=nodes, client=self.bot, cache_capacity=100)
-            logger.info("Successfully connected to Wavelink Node.")
-        except Exception as e:
-            logger.error(f"Failed to connect to Wavelink node: {e}")
+        self.bot.loop.create_task(self.connect_wavelink_node())
 
     @commands.Cog.listener()
     async def on_wavelink_track_end(self, payload: wavelink.TrackEndEventPayload):
         """Event fired when a track ends."""
         if not payload.player:
             return
-        # Wavelink 3.x AutoPlay handles queue progression, but if we don't use AutoPlay,
-        # we can just play the next track manually if it exists.
         if not payload.player.queue.is_empty:
             next_track = payload.player.queue.get()
             await payload.player.play(next_track)
@@ -119,6 +127,14 @@ class Music(commands.Cog):
         """Play music"""
         await interaction.response.defer()
         
+        # Check node connection
+        if not wavelink.Pool.nodes or not any(n.status == wavelink.NodeStatus.CONNECTED for n in wavelink.Pool.nodes.values()):
+            await interaction.followup.send(
+                embed=EmbedFactory.error("Audio Server Starting", "The Lavalink audio server is still starting up. Please wait 10-15 seconds and try again!"),
+                ephemeral=True
+            )
+            return
+
         if not interaction.user.voice:
             await interaction.followup.send(
                 embed=EmbedFactory.error("Not in Voice", "You must be in a voice channel to use this command"),
