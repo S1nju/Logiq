@@ -8,9 +8,9 @@ from discord import app_commands
 from discord.ext import commands
 from typing import Optional
 import logging
+from collections import defaultdict
 from utils.i18n import t
-import random
-
+from utils.image_gen import generate_rank_card, generate_leaderboard
 from utils.embeds import EmbedFactory, EmbedColor
 from utils.permissions import is_admin
 from database.db_manager import DatabaseManager
@@ -288,11 +288,11 @@ class Games(commands.Cog):
         """Setup game panel"""
         embed = EmbedFactory.create(
             title="🎮 Game Center",
-            description="Click the buttons below to play games!\n\n"
+            description=t("games.center_desc", default="Click the buttons below to play games!\n\n"
                        "🎲 **Dice** - Roll a dice\n"
                        "🪙 **Coinflip** - Flip a coin\n"
                        "🧠 **Trivia** - Test your knowledge (Win 💎 50!)\n"
-                       "🔮 **8-Ball** - Ask a question",
+                       "🔮 **8-Ball** - Ask a question"),
             color=EmbedColor.INFO
         )
 
@@ -300,19 +300,19 @@ class Games(commands.Cog):
         await interaction.channel.send(embed=embed)
 
         # Dice game
-        dice_embed = EmbedFactory.create(title="🎲 Dice Game", description="Click to roll a dice!", color=EmbedColor.INFO)
+        dice_embed = EmbedFactory.create(title="🎲 Dice Game", description=t("games.dice_desc", default="Click to roll a dice!"), color=EmbedColor.INFO)
         await interaction.channel.send(embed=dice_embed, view=DiceGameView(self))
 
         # Coinflip game
-        coin_embed = EmbedFactory.create(title="🪙 Coinflip", description="Pick heads or tails!", color=EmbedColor.INFO)
+        coin_embed = EmbedFactory.create(title="🪙 Coinflip", description=t("games.coinflip_desc", default="Pick heads or tails!"), color=EmbedColor.INFO)
         await interaction.channel.send(embed=coin_embed, view=CoinFlipView(self))
 
         # Trivia game
-        trivia_embed = EmbedFactory.create(title="🧠 Trivia Game", description="Test your knowledge! Win 💎 50!", color=EmbedColor.SUCCESS)
+        trivia_embed = EmbedFactory.create(title="🧠 Trivia Game", description=t("games.trivia_desc", default="Test your knowledge! Win 💎 50!"), color=EmbedColor.SUCCESS)
         await interaction.channel.send(embed=trivia_embed, view=TriviaStartView(self))
 
         # 8-Ball
-        ball_embed = EmbedFactory.create(title="🔮 Magic 8-Ball", description="Ask the magic 8-ball a question!", color=EmbedColor.INFO)
+        ball_embed = EmbedFactory.create(title="🔮 Magic 8-Ball", description=t("games.8ball_desc", default="Ask the magic 8-ball a question!"), color=EmbedColor.INFO)
         await interaction.channel.send(embed=ball_embed, view=EightBallView(self))
 
         await interaction.response.send_message(
@@ -339,10 +339,23 @@ class Games(commands.Cog):
         from utils.constants import calculate_level_xp
         level = user_data.get('level', 0)
         xp = user_data.get('xp', 0)
-        next_level_xp = calculate_level_xp(level + 1)
 
-        embed = EmbedFactory.rank_card(target, level, xp, rank, next_level_xp)
-        await interaction.response.send_message(embed=embed)
+        avatar_bytes = None
+        try:
+            if target.display_avatar:
+                avatar_bytes = await target.display_avatar.read()
+        except Exception:
+            pass
+
+        await interaction.response.defer()
+        file = await generate_rank_card(
+            user_name=target.display_name,
+            avatar_bytes=avatar_bytes,
+            points=xp,
+            rank=rank,
+            level=level
+        )
+        await interaction.followup.send(file=file)
 
     @app_commands.command(name="balance", description="Check your balance")
     @app_commands.describe(user="User to check (optional)")
@@ -371,8 +384,39 @@ class Games(commands.Cog):
             )
             return
 
-        embed = EmbedFactory.leaderboard("XP Leaderboard", leaderboard, field_name="xp", color=EmbedColor.LEVELING)
-        await interaction.response.send_message(embed=embed)
+        await interaction.response.defer()
+        users_data = []
+        for i, u in enumerate(leaderboard):
+            user_id = u['user_id']
+            # Fetch avatar bytes if possible
+            member = interaction.guild.get_member(user_id)
+            avatar_bytes = None
+            name_str = f"User {user_id}"
+            if member:
+                name_str = member.display_name
+                try:
+                    if member.display_avatar:
+                        avatar_bytes = await member.display_avatar.read()
+                except Exception:
+                    pass
+            else:
+                try:
+                    fetched = await self.bot.fetch_user(user_id)
+                    name_str = fetched.display_name
+                    if fetched.avatar:
+                        avatar_bytes = await fetched.avatar.read()
+                except Exception:
+                    pass
+                    
+            users_data.append({
+                'avatar_bytes': avatar_bytes,
+                'name': name_str,
+                'points': u.get('xp', 0),
+                'rank': i + 1
+            })
+
+        file = await generate_leaderboard(users_data, interaction.guild.name)
+        await interaction.followup.send(file=file)
 
 
 async def setup(bot: commands.Bot):

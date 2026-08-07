@@ -10,10 +10,46 @@ from typing import Optional
 import logging
 from utils.i18n import t
 import asyncio
+import yt_dlp
 
 from utils.embeds import EmbedFactory, EmbedColor
 from utils.permissions import is_admin
 from database.db_manager import DatabaseManager
+
+ytdl_format_options = {
+    'format': 'bestaudio/best',
+    'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
+    'restrictfilenames': True,
+    'noplaylist': True,
+    'nocheckcertificate': True,
+    'ignoreerrors': False,
+    'logtostderr': False,
+    'quiet': True,
+    'no_warnings': True,
+    'default_search': 'auto',
+    'source_address': '0.0.0.0'
+}
+ytdl = yt_dlp.YoutubeDL(ytdl_format_options)
+
+class YTDLSource(discord.PCMVolumeTransformer):
+    def __init__(self, source, *, data, volume=0.5):
+        super().__init__(source, volume)
+        self.data = data
+        self.title = data.get('title')
+        self.url = data.get('url')
+
+    @classmethod
+    async def from_url(cls, url, *, loop=None, stream=False):
+        loop = loop or asyncio.get_event_loop()
+        data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
+        if 'entries' in data:
+            data = data['entries'][0]
+        filename = data['url'] if stream else ytdl.prepare_filename(data)
+        ffmpeg_options = {
+            'options': '-vn',
+            'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5'
+        }
+        return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
 
 logger = logging.getLogger(__name__)
 
@@ -145,6 +181,29 @@ class Music(commands.Cog):
         self.module_config = config.get('modules', {}).get('music', {})
         self.queues = {}  # guild_id: MusicQueue
 
+    def play_next(self, guild_id: int):
+        vc = self.bot.get_guild(guild_id).voice_client
+        if not vc:
+            return
+        
+        queue = self.queues.get(guild_id)
+        if not queue:
+            return
+            
+        track = queue.next()
+        if not track:
+            return
+
+        async def stream_and_play():
+            try:
+                player = await YTDLSource.from_url(track, loop=self.bot.loop, stream=True)
+                vc.play(player, after=lambda _: self.play_next(guild_id))
+            except Exception as e:
+                logger.error(f"Error streaming track {track}: {e}")
+                self.play_next(guild_id)
+                
+        asyncio.run_coroutine_threadsafe(stream_and_play(), self.bot.loop)
+
     def get_queue(self, guild_id: int) -> MusicQueue:
         """Get or create queue for guild"""
         if guild_id not in self.queues:
@@ -180,6 +239,10 @@ class Music(commands.Cog):
         queue = self.get_queue(interaction.guild.id)
         queue.add(query)
         
+        vc = interaction.guild.voice_client
+        if not vc.is_playing() and not vc.is_paused():
+            self.play_next(interaction.guild.id)
+
         embed = EmbedFactory.success(
             "Added to Queue",
             f"**Track:** {query}\n"
@@ -193,8 +256,9 @@ class Music(commands.Cog):
     @app_commands.command(name="join", description="Join your voice channel")
     async def join(self, interaction: discord.Interaction):
         """Join voice channel"""
+        await interaction.response.defer()
         if not interaction.user.voice:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 embed=EmbedFactory.error("Not in Voice", "You must be in a voice channel"),
                 ephemeral=True
             )
@@ -208,13 +272,14 @@ class Music(commands.Cog):
             await channel.connect()
 
         embed = EmbedFactory.success("Joined", f"Joined {channel.mention}")
-        await interaction.response.send_message(embed=embed)
+        await interaction.followup.send(embed=embed)
 
     @app_commands.command(name="leave", description="Leave voice channel")
     async def leave(self, interaction: discord.Interaction):
         """Leave voice channel"""
+        await interaction.response.defer()
         if not interaction.guild.voice_client:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 embed=EmbedFactory.error("Not Connected", "I'm not in a voice channel"),
                 ephemeral=True
             )
@@ -226,7 +291,7 @@ class Music(commands.Cog):
 
         await interaction.guild.voice_client.disconnect()
         embed = EmbedFactory.success("Disconnected", "Left voice channel")
-        await interaction.response.send_message(embed=embed)
+        await interaction.followup.send(embed=embed)
 
     @app_commands.command(name="queue", description="View music queue")
     async def view_queue(self, interaction: discord.Interaction):

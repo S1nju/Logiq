@@ -1,9 +1,9 @@
 services:
-  logiq:
+  bot:
     build:
       context: .
       dockerfile: DockerFile
-    container_name: logiq
+    container_name: bot
     restart: unless-stopped
     env_file:
       - .env
@@ -11,6 +11,8 @@ services:
       - "6666:6666"
     volumes:
       - ./data:/app/data
+    depends_on:
+      - mongodb
     networks:
       - default
   mongodb:

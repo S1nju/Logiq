@@ -162,21 +162,6 @@ class Verification(commands.Cog):
             welcome_message = welcome_message.replace(channel.name, channel.mention)
             welcome_message = welcome_message.replace(f"#{channel.name}", channel.mention)
         
-        # Send welcome message in welcome channel (PUBLIC - everyone can see)
-        welcome_channel_id = guild_config.get('welcome_channel')
-        if welcome_channel_id:
-            welcome_channel = member.guild.get_channel(welcome_channel_id)
-            if welcome_channel:
-                # Make sure everyone can see the welcome channel
-                welcome_embed = EmbedFactory.create(
-                    title=f"👋 Welcome to {member.guild.name}!",
-                    description=f"{member.mention}\n\n{welcome_message}",
-                    color=EmbedColor.SUCCESS
-                )
-                welcome_embed.set_thumbnail(url=member.display_avatar.url)
-                await welcome_channel.send(embed=welcome_embed)
-                logger.info(f"Sent welcome message for {member} in {welcome_channel}")
-
         # Send verification only if verified_role is configured
         if not verified_role_id:
             return

@@ -41,6 +41,23 @@ economy:
   amount: المبلغ
   balance_desc: رصيد {user}
   balance_title: رصيد {symbol}
+games:
+  8ball_desc: اسأل الكرة 8 السحرية سؤالًا!
+  center_desc: 'انقر على الأزرار بالأسفل للعب الألعاب!
+
+
+    🎲 **نرد** - رمي نرد
+
+    🪙 **عملة** - رمي عملة معدنية
+
+    🧠 **أسئلة** - اختبر معلوماتك (اربح 💎 50!)
+
+    🔮 **الكرة 8** - اسأل سؤالًا'
+  coinflip_desc: اختر صورة أو كتابة!
+  dice_desc: انقر لرمي النرد!
+  lost_msg: خسرت!
+  trivia_desc: اختبر معلوماتك! اربح 💎 50!
+  won_msg: ربحت!
 language:
   command_desc: تغيير إعداد لغة البوت (للإدارة)
   current: 'اللغة الحالية: **{lang_name} ({lang_code})**'
