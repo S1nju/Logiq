@@ -5,9 +5,9 @@ api_keys:
   spotify_client_secret: ''
   youtube: ''
 bot:
-  activity: Managing your community
+  activity: يتم الادارة
   activity_type: watching
-  language: en
+  language: ar
   prefix: /
   status: online
   token: ${DISCORD_BOT_TOKEN}
@@ -35,7 +35,7 @@ modules:
     report_channel: null
     report_interval: 604800
   economy:
-    currency_name: ProgrammiCoin
+    currency_name: RDMCoin
     currency_symbol: 💎
     daily_reward: 100
     enabled: true

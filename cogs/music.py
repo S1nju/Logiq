@@ -42,8 +42,15 @@ ytdl_format_options = {
     'quiet': True,
     'no_warnings': True,
     'default_search': 'auto',
-    'source_address': '0.0.0.0'
+    'source_address': '0.0.0.0',
+    # Spoof mobile clients to bypass YouTube's datacenter Bot blocks
+    'extractor_args': {'youtube': {'player_client': ['android', 'ios']}}
 }
+
+# If the user provides a cookies.txt file, use it automatically to bypass captcha
+if os.path.exists("cookies.txt"):
+    ytdl_format_options['cookiefile'] = 'cookies.txt'
+    logger.info("Found cookies.txt! YouTube bot bypass enabled.")
 ytdl = yt_dlp.YoutubeDL(ytdl_format_options)
 
 class YTDLSource(discord.PCMVolumeTransformer):
@@ -252,6 +259,8 @@ class Music(commands.Cog):
                 ephemeral=True
             )
             return
+
+        await interaction.response.defer()
         if not interaction.guild.voice_client:
             try:
                 await interaction.user.voice.channel.connect()
@@ -293,13 +302,28 @@ class Music(commands.Cog):
 
         channel = interaction.user.voice.channel
         
-        if interaction.guild.voice_client:
-            await interaction.guild.voice_client.move_to(channel)
-        else:
-            await channel.connect()
-
-        embed = EmbedFactory.success("Joined", f"Joined {channel.mention}")
-        await interaction.followup.send(embed=embed)
+        try:
+            logger.info(f"Attempting to join voice channel: {channel.name} ({channel.id})")
+            if interaction.guild.voice_client:
+                logger.info("Bot is already in a VC, attempting to move_to() instead...")
+                await interaction.guild.voice_client.move_to(channel)
+            else:
+                logger.info("Bot is not in VC. Triggering channel.connect()...")
+                # timeout=20.0 to match typical Discord Gateway setups
+                await channel.connect(timeout=20.0, reconnect=True)
+            
+            logger.info("Connection successful!")
+            embed = EmbedFactory.success("Joined", f"Joined {channel.mention}")
+            await interaction.followup.send(embed=embed)
+            
+        except Exception as e:
+            import traceback
+            trace_str = traceback.format_exc()
+            logger.error(f"CRITICAL FAILURE IN JOIN: {str(e)}\n{trace_str}")
+            await interaction.followup.send(
+                embed=EmbedFactory.error("Connection Failed", f"A fatal error occurred holding the voice channel:\n```py\n{str(e)}\n```"),
+                ephemeral=True
+            )
 
            
 
