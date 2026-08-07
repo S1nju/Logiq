@@ -27,5 +27,13 @@ services:
     volumes:
       - mongodb_data:/data/db
 
+  lavalink:
+    image: ghcr.io/lavalink-devs/lavalink:4
+    container_name: lavalink
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./application.yml:/opt/Lavalink/application.yml
+
 volumes:
   mongodb_data:

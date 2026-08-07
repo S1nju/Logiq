@@ -1,194 +1,83 @@
 """
 Music Cog for Logiq
-Music player with YouTube support
+Music player powered by Wavelink (Lavalink)
 """
 
 import discord
 from discord import app_commands
 from discord.ext import commands
-from typing import Optional
 import logging
+import wavelink
 from utils.i18n import t
-import asyncio
-import aiohttp
-import re
-import yt_dlp
-import os
-import certifi
-import ssl
-
-# Force python SSL context to use certifi bundle directly inside Docker
-os.environ["SSL_CERT_FILE"] = certifi.where()
-os.environ["REQUESTS_CA_BUNDLE"] = certifi.where()
-
-# Nuke SSL strict verification for yt-dlp exceptions
-try:
-    _create_unverified_https_context = ssl._create_unverified_context
-except AttributeError:
-    pass
-else:
-    ssl._create_default_https_context = _create_unverified_https_context
-
 from utils.embeds import EmbedFactory, EmbedColor
 from utils.permissions import is_admin
 from database.db_manager import DatabaseManager
 
-ytdl_format_options = {
-    'format': 'bestaudio/best',
-    'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
-    'restrictfilenames': True,
-    'noplaylist': True,
-    'nocheckcertificate': True,
-    'ignoreerrors': False,
-    'logtostderr': False,
-    'quiet': True,
-    'no_warnings': True,
-    'default_search': 'auto',
-    'source_address': '0.0.0.0',
-    # Spoof mobile clients to bypass YouTube's datacenter Bot blocks
-    'extractor_args': {'youtube': {'player_client': ['android', 'ios']}}
-}
-
-# If the user provides a cookies.txt file, use it automatically to bypass captcha
-if os.path.exists("cookies.txt"):
-    ytdl_format_options['cookiefile'] = 'cookies.txt'
-    logger.info("Found cookies.txt! YouTube bot bypass enabled.")
-ytdl = yt_dlp.YoutubeDL(ytdl_format_options)
-
-class YTDLSource(discord.PCMVolumeTransformer):
-    def __init__(self, source, *, data, volume=0.5):
-        super().__init__(source, volume)
-        self.data = data
-        self.title = data.get('title')
-        self.url = data.get('url')
-
-    @classmethod
-    async def from_url(cls, url, *, loop=None, stream=False):
-        loop = loop or asyncio.get_event_loop()
-        data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
-        if 'entries' in data:
-            data = data['entries'][0]
-        filename = data['url'] if stream else ytdl.prepare_filename(data)
-        ffmpeg_options = {
-            'options': '-vn',
-            'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5'
-        }
-        return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
-
 logger = logging.getLogger(__name__)
-
-
-class MusicQueue:
-    """Music queue manager"""
-    
-    def __init__(self):
-        self.queue = []
-        self.current = None
-        self.loop = False
-        
-    def add(self, track):
-        """Add track to queue"""
-        self.queue.append(track)
-        
-    def next(self):
-        """Get next track"""
-        if self.loop and self.current:
-            return self.current
-        if self.queue:
-            self.current = self.queue.pop(0)
-            return self.current
-        return None
-        
-    def clear(self):
-        """Clear queue"""
-        self.queue = []
-        self.current = None
-        
-    def skip(self):
-        """Skip current track"""
-        if self.queue:
-            self.current = self.queue.pop(0)
-            return self.current
-        return None
-
 
 class MusicControlView(discord.ui.View):
     """Music player controls"""
     
-    def __init__(self, cog: 'Music'):
+    def __init__(self):
         super().__init__(timeout=None)
-        self.cog = cog
-        for item in self.children:
-            if isinstance(item, discord.ui.Button):
-                if item.custom_id == "music_pause":
-                    item.label = t("music.pause", default="⏸️ Pause")
-                elif item.custom_id == "music_skip":
-                    item.label = t("music.skip", default="⏭️ Skip")
-                elif item.custom_id == "music_stop":
-                    item.label = t("music.stop", default="⏹️ Stop")
         
     @discord.ui.button(label="⏸️ Pause", style=discord.ButtonStyle.primary, custom_id="music_pause")
     async def pause_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Pause/Resume music"""
-        if not interaction.guild.voice_client:
+        player: wavelink.Player = interaction.guild.voice_client
+        if not player:
             await interaction.response.send_message(
                 embed=EmbedFactory.error("Not Playing", "No music is playing"),
                 ephemeral=True
             )
             return
             
-        vc = interaction.guild.voice_client
-        if vc.is_playing():
-            vc.pause()
-            button.label = t("music.resume", default="▶️ Resume")
-            await interaction.response.edit_message(view=self)
-            await interaction.followup.send(
-                embed=EmbedFactory.info("Paused", "Music paused"),
-                ephemeral=True
-            )
-        elif vc.is_paused():
-            vc.resume()
+        if player.paused:
+            await player.pause(False)
             button.label = t("music.pause", default="⏸️ Pause")
             await interaction.response.edit_message(view=self)
             await interaction.followup.send(
                 embed=EmbedFactory.info("Resumed", "Music resumed"),
                 ephemeral=True
             )
+        else:
+            await player.pause(True)
+            button.label = t("music.resume", default="▶️ Resume")
+            await interaction.response.edit_message(view=self)
+            await interaction.followup.send(
+                embed=EmbedFactory.info("Paused", "Music paused"),
+                ephemeral=True
+            )
             
     @discord.ui.button(label="⏭️ Skip", style=discord.ButtonStyle.secondary, custom_id="music_skip")
     async def skip_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Skip current track"""
-        if not interaction.guild.voice_client:
+        player: wavelink.Player = interaction.guild.voice_client
+        if not player:
             await interaction.response.send_message(
                 embed=EmbedFactory.error("Not Playing", "No music is playing"),
                 ephemeral=True
             )
             return
             
-        vc = interaction.guild.voice_client
-        if vc.is_playing() or vc.is_paused():
-            vc.stop()
-            await interaction.response.send_message(
-                embed=EmbedFactory.success("Skipped", "Skipped current track"),
-                ephemeral=True
-            )
+        await player.skip(force=True)
+        await interaction.response.send_message(
+            embed=EmbedFactory.success("Skipped", "Skipped current track"),
+            ephemeral=True
+        )
             
     @discord.ui.button(label="⏹️ Stop", style=discord.ButtonStyle.danger, custom_id="music_stop")
     async def stop_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Stop music and disconnect"""
-        if not interaction.guild.voice_client:
+        player: wavelink.Player = interaction.guild.voice_client
+        if not player:
             await interaction.response.send_message(
                 embed=EmbedFactory.error("Not Playing", "No music is playing"),
                 ephemeral=True
             )
             return
             
-        guild_id = interaction.guild.id
-        if guild_id in self.cog.queues:
-            self.cog.queues[guild_id].clear()
-            
-        vc = interaction.guild.voice_client
-        await vc.disconnect()
+        await player.disconnect()
         await interaction.response.send_message(
             embed=EmbedFactory.success("Stopped", "Music stopped and disconnected"),
             ephemeral=True
@@ -196,67 +85,40 @@ class MusicControlView(discord.ui.View):
 
 
 class Music(commands.Cog):
-    """Music player cog"""
+    """Music player cog powered by Wavelink"""
 
     def __init__(self, bot: commands.Bot, db: DatabaseManager, config: dict):
         self.bot = bot
         self.db = db
         self.config = config
         self.module_config = config.get('modules', {}).get('music', {})
-        self.queues = {}  # guild_id: MusicQueue
 
-    async def async_play_next(self, guild_id: int):
-        logger.info(f"async_play_next triggered for guild {guild_id}")
-        vc = self.bot.get_guild(guild_id).voice_client
-        if not vc:
-            logger.warning("async_play_next aborted: No VC active")
-            return
-        
-        queue = self.queues.get(guild_id)
-        if not queue:
-            logger.warning("async_play_next aborted: No queue found")
-            return
-            
-        track = queue.next()
-        if not track:
-            logger.info("async_play_next finished: Queue completely empty")
-            return
-
-        logger.info(f"Preparing to stream track: {track}")
+    async def cog_load(self):
+        """Called when the cog is loaded."""
+        nodes = [wavelink.Node(uri="http://127.0.0.1:2333", password="youshallnotpass")]
         try:
-            logger.info(f"Extracting YTDLInfo for: {track}")
-            player = await YTDLSource.from_url(track, loop=self.bot.loop, stream=True)
-            logger.info(f"Extraction successful: Playing {player.title}")
-            
-            def after_playback(e):
-                if e:
-                    logger.error(f"Playback error: {e}")
-                fut = asyncio.run_coroutine_threadsafe(self.async_play_next(guild_id), self.bot.loop)
-                try:
-                    fut.result()
-                except Exception as ex:
-                    logger.error(f"Error stepping queue: {ex}")
-
-            vc.play(player, after=after_playback)
+            await wavelink.Pool.connect(nodes=nodes, client=self.bot, cache_capacity=100)
+            logger.info("Successfully connected to Wavelink Node.")
         except Exception as e:
-            import traceback
-            traceback.print_exc()
-            logger.error(f"Error streaming track {track}: {e}")
-            await self.async_play_next(guild_id)
+            logger.error(f"Failed to connect to Wavelink node: {e}")
 
-    def get_queue(self, guild_id: int) -> MusicQueue:
-        """Get or create queue for guild"""
-        if guild_id not in self.queues:
-            self.queues[guild_id] = MusicQueue()
-        return self.queues[guild_id]
+    @commands.Cog.listener()
+    async def on_wavelink_track_end(self, payload: wavelink.TrackEndEventPayload):
+        """Event fired when a track ends."""
+        if not payload.player:
+            return
+        # Wavelink 3.x AutoPlay handles queue progression, but if we don't use AutoPlay,
+        # we can just play the next track manually if it exists.
+        if not payload.player.queue.is_empty:
+            next_track = payload.player.queue.get()
+            await payload.player.play(next_track)
 
-    @app_commands.command(name="play", description="Play music from YouTube")
-    @app_commands.describe(query="Song name or YouTube URL")
+    @app_commands.command(name="play", description="Play music from YouTube, Spotify, SoundCloud, or Links")
+    @app_commands.describe(query="Song name or URL")
     async def play(self, interaction: discord.Interaction, query: str):
-        """Play music from YouTube"""
+        """Play music"""
         await interaction.response.defer()
         
-        # Check if user is in voice channel
         if not interaction.user.voice:
             await interaction.followup.send(
                 embed=EmbedFactory.error("Not in Voice", "You must be in a voice channel to use this command"),
@@ -264,9 +126,11 @@ class Music(commands.Cog):
             )
             return
 
-        if not interaction.guild.voice_client:
+        player: wavelink.Player = interaction.guild.voice_client
+        
+        if not player:
             try:
-                await interaction.user.voice.channel.connect()
+                player = await interaction.user.voice.channel.connect(cls=wavelink.Player)
             except Exception as e:
                 await interaction.followup.send(
                     embed=EmbedFactory.error("Connection Failed", f"Could not join voice channel: {str(e)}"),
@@ -274,39 +138,51 @@ class Music(commands.Cog):
                 )
                 return
 
-        # Check for Spotify links and convert to search query
-        if "open.spotify.com/track/" in query:
-            try:
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(query) as response:
-                        text = await response.text()
-                        match = re.search(r'<title>(.*?)</title>', text)
-                        if match:
-                            title = match.group(1)
-                            title = title.replace(" - song and lyrics by ", " ")
-                            title = title.split(" | Spotify")[0]
-                            query = title
-                            logger.info(f"Converted Spotify link to query: {query}")
-            except Exception as e:
-                logger.error(f"Failed to parse Spotify link: {e}")
+        try:
+            # Wavelink handles YouTube, Spotify, Soundcloud automatically
+            tracks: wavelink.Search = await wavelink.Playable.search(query)
+            if not tracks:
+                await interaction.followup.send(
+                    embed=EmbedFactory.error("Not Found", "No songs were found matching your query."),
+                    ephemeral=True
+                )
+                return
 
-        # Add to queue
-        queue = self.get_queue(interaction.guild.id)
-        queue.add(query)
-        
-        vc = interaction.guild.voice_client
-        if not vc.is_playing() and not vc.is_paused():
-            self.bot.loop.create_task(self.async_play_next(interaction.guild.id))
-
-        embed = EmbedFactory.success(
-            "Added to Queue",
-            f"**Track:** {query}\n"
-            f"**Requested by:** {interaction.user.mention}\n"
-            f"**Position in queue:** {len(queue.queue)}"
-        )
-        
-        await interaction.followup.send(embed=embed)
-        logger.info(f"Added to queue by {interaction.user}: {query}")
+            # If it's a playlist, add all tracks
+            if isinstance(tracks, wavelink.Playlist):
+                added = len(tracks.tracks)
+                for track in tracks.tracks:
+                    player.queue.put(track)
+                embed = EmbedFactory.success(
+                    "Playlist Added",
+                    f"**Added {added} tracks from:** {tracks.name}\n"
+                    f"**Requested by:** {interaction.user.mention}"
+                )
+            else:
+                track = tracks[0]
+                player.queue.put(track)
+                embed = EmbedFactory.success(
+                    "Added to Queue",
+                    f"**Track:** {track.title}\n"
+                    f"**Artist:** {track.author}\n"
+                    f"**Requested by:** {interaction.user.mention}\n"
+                    f"**Position in queue:** {player.queue.count}"
+                )
+            
+            await interaction.followup.send(embed=embed, view=MusicControlView())
+            
+            # Start playback if not already playing
+            if not player.playing:
+                await player.play(player.queue.get())
+                
+            logger.info(f"Added to queue by {interaction.user}: {query}")
+            
+        except Exception as e:
+            logger.error(f"Error playing track: {e}")
+            await interaction.followup.send(
+                embed=EmbedFactory.error("Error", f"Failed to play the track: {e}"),
+                ephemeral=True
+            )
 
     @app_commands.command(name="join", description="Join your voice channel")
     async def join(self, interaction: discord.Interaction):
@@ -320,58 +196,44 @@ class Music(commands.Cog):
             return
 
         channel = interaction.user.voice.channel
+        player: wavelink.Player = interaction.guild.voice_client
         
         try:
-            logger.info(f"Attempting to join voice channel: {channel.name} ({channel.id})")
-            if interaction.guild.voice_client:
-                logger.info("Bot is already in a VC, attempting to move_to() instead...")
-                await interaction.guild.voice_client.move_to(channel)
+            if player:
+                await player.move_to(channel)
             else:
-                logger.info("Bot is not in VC. Triggering channel.connect()...")
-                # timeout=20.0 to match typical Discord Gateway setups
-                await channel.connect(timeout=20.0, reconnect=True)
-            
-            logger.info("Connection successful!")
+                await channel.connect(cls=wavelink.Player)
+                
             embed = EmbedFactory.success("Joined", f"Joined {channel.mention}")
             await interaction.followup.send(embed=embed)
-            
         except Exception as e:
-            import traceback
-            trace_str = traceback.format_exc()
-            logger.error(f"CRITICAL FAILURE IN JOIN: {str(e)}\n{trace_str}")
             await interaction.followup.send(
-                embed=EmbedFactory.error("Connection Failed", f"A fatal error occurred holding the voice channel:\n```py\n{str(e)}\n```"),
+                embed=EmbedFactory.error("Connection Failed", f"An error occurred: {e}"),
                 ephemeral=True
             )
-
-           
 
     @app_commands.command(name="leave", description="Leave voice channel")
     async def leave(self, interaction: discord.Interaction):
         """Leave voice channel"""
         await interaction.response.defer()
-        if not interaction.guild.voice_client:
+        player: wavelink.Player = interaction.guild.voice_client
+        if not player:
             await interaction.followup.send(
                 embed=EmbedFactory.error("Not Connected", "I'm not in a voice channel"),
                 ephemeral=True
             )
             return
 
-        guild_id = interaction.guild.id
-        if guild_id in self.queues:
-            self.queues[guild_id].clear()
-
-        await interaction.guild.voice_client.disconnect()
+        await player.disconnect()
         embed = EmbedFactory.success("Disconnected", "Left voice channel")
         await interaction.followup.send(embed=embed)
 
     @app_commands.command(name="queue", description="View music queue")
     async def view_queue(self, interaction: discord.Interaction):
         """View music queue"""
-        guild_id = interaction.guild.id
-        queue = self.get_queue(guild_id)
-
-        if not queue.current and not queue.queue:
+        player: wavelink.Player = interaction.guild.voice_client
+        
+        if not player or (not player.playing and player.queue.is_empty):
             await interaction.response.send_message(
                 embed=EmbedFactory.info("Empty Queue", "The music queue is empty"),
                 ephemeral=True
@@ -379,77 +241,70 @@ class Music(commands.Cog):
             return
 
         description = ""
-        if queue.current:
-            description += f"**Now Playing:**\n{queue.current}\n\n"
+        if player.current:
+            description += f"**Now Playing:**\n{player.current.title} - {player.current.author}\n\n"
 
-        if queue.queue:
+        if not player.queue.is_empty:
             description += "**Up Next:**\n"
-            for i, track in enumerate(queue.queue[:10], 1):
-                description += f"{i}. {track}\n"
+            for i, track in enumerate(player.queue[:10], 1):
+                description += f"{i}. {track.title} - {track.author}\n"
 
         embed = EmbedFactory.create(
             title="🎵 Music Queue",
             description=description,
             color=EmbedColor.INFO
         )
-
         await interaction.response.send_message(embed=embed)
 
     @app_commands.command(name="skip", description="Skip current track")
     async def skip(self, interaction: discord.Interaction):
         """Skip current track"""
-        if not interaction.guild.voice_client:
+        player: wavelink.Player = interaction.guild.voice_client
+        if not player or not player.playing:
             await interaction.response.send_message(
                 embed=EmbedFactory.error("Not Playing", "No music is playing"),
                 ephemeral=True
             )
             return
 
-        vc = interaction.guild.voice_client
-        if vc.is_playing() or vc.is_paused():
-            vc.stop()
-            embed = EmbedFactory.success("Skipped", "Skipped current track")
-            await interaction.response.send_message(embed=embed)
-        else:
-            await interaction.response.send_message(
-                embed=EmbedFactory.error("Not Playing", "No music is playing"),
-                ephemeral=True
-            )
+        await player.skip(force=True)
+        embed = EmbedFactory.success("Skipped", "Skipped current track")
+        await interaction.response.send_message(embed=embed)
 
     @app_commands.command(name="pause", description="Pause music")
     async def pause(self, interaction: discord.Interaction):
         """Pause music"""
-        if not interaction.guild.voice_client:
+        player: wavelink.Player = interaction.guild.voice_client
+        if not player or not player.playing:
             await interaction.response.send_message(
                 embed=EmbedFactory.error("Not Playing", "No music is playing"),
                 ephemeral=True
             )
             return
 
-        vc = interaction.guild.voice_client
-        if vc.is_playing():
-            vc.pause()
+        if not player.paused:
+            await player.pause(True)
             embed = EmbedFactory.success("Paused", "Music paused")
             await interaction.response.send_message(embed=embed)
         else:
             await interaction.response.send_message(
-                embed=EmbedFactory.error("Not Playing", "No music is playing"),
+                embed=EmbedFactory.error("Already Paused", "Music is already paused"),
                 ephemeral=True
             )
 
     @app_commands.command(name="resume", description="Resume music")
     async def resume(self, interaction: discord.Interaction):
         """Resume music"""
-        if not interaction.guild.voice_client:
+        player: wavelink.Player = interaction.guild.voice_client
+        if not player:
             await interaction.response.send_message(
-                embed=EmbedFactory.error("Not Playing", "No music is paused"),
+                embed=EmbedFactory.error("Not Playing", "I am not in a voice channel"),
                 ephemeral=True
             )
             return
 
-        vc = interaction.guild.voice_client
-        if vc.is_paused():
-            vc.resume()
+        if player.paused:
+            await player.pause(False)
             embed = EmbedFactory.success("Resumed", "Music resumed")
             await interaction.response.send_message(embed=embed)
         else:
@@ -470,24 +325,23 @@ class Music(commands.Cog):
             )
             return
 
-        if not interaction.guild.voice_client:
+        player: wavelink.Player = interaction.guild.voice_client
+        if not player:
             await interaction.response.send_message(
-                embed=EmbedFactory.error("Not Playing", "No music is playing"),
+                embed=EmbedFactory.error("Not Playing", "I am not in a voice channel"),
                 ephemeral=True
             )
             return
 
-        # Note: Volume control requires proper audio source implementation
+        await player.set_volume(volume)
         embed = EmbedFactory.success("Volume", f"Volume set to {volume}%")
         await interaction.response.send_message(embed=embed)
 
     @app_commands.command(name="nowplaying", description="Show currently playing track")
     async def nowplaying(self, interaction: discord.Interaction):
         """Show currently playing track"""
-        guild_id = interaction.guild.id
-        queue = self.get_queue(guild_id)
-
-        if not queue.current:
+        player: wavelink.Player = interaction.guild.voice_client
+        if not player or not player.current:
             await interaction.response.send_message(
                 embed=EmbedFactory.info("Nothing Playing", "No music is currently playing"),
                 ephemeral=True
@@ -496,10 +350,9 @@ class Music(commands.Cog):
 
         embed = EmbedFactory.create(
             title="🎵 Now Playing",
-            description=queue.current,
+            description=f"**{player.current.title}** by {player.current.author}",
             color=EmbedColor.INFO
         )
-
         await interaction.response.send_message(embed=embed)
 
 
