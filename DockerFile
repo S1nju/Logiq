@@ -1,8 +1,9 @@
 # Use an official lightweight Python image
 FROM python:3.11-slim
 
-# Install system dependencies needed for discord.py (like voice support/FFmpeg)
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Force IPv4 for apt to prevent hanging/connection errors with deb.debian.org
+RUN echo 'Acquire::ForceIPv4 "true";' > /etc/apt/apt.conf.d/99force-ipv4 && \
+    apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     git \
     build-essential \
