@@ -22,7 +22,7 @@ def create_leaderboard_image(users_data: list, server_name: str) -> BytesIO:
     """
     # UI Constants
     BG_COLOR = (23, 24, 28)
-    PANEL_COLOR = (62, 93, 88)
+    PANEL_COLOR = (155, 62, 110)
     TEXT_COLOR = (255, 255, 255)
     PANEL_HEIGHT = 85
     PANEL_SPACING = 10
@@ -42,7 +42,9 @@ def create_leaderboard_image(users_data: list, server_name: str) -> BytesIO:
         font_large = ImageFont.truetype("assets/fonts/Tajawal-Bold.ttf", 32)
         font_regular = ImageFont.truetype("assets/fonts/Tajawal-Bold.ttf", 24)
         font_small = ImageFont.truetype("assets/fonts/Tajawal-Bold.ttf", 20)
-    except Exception:
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
         font_large = ImageFont.load_default()
         font_regular = ImageFont.load_default()
         font_small = ImageFont.load_default()
@@ -54,7 +56,7 @@ def create_leaderboard_image(users_data: list, server_name: str) -> BytesIO:
     draw.rounded_rectangle([(title_x, title_y), (title_x + title_w, title_y + title_h)], radius=15, fill=(38, 59, 56))
 
     # Draw Title text (توب النقاط)
-    title = get_arabic_text("توب النقاط")
+    title = get_arabic_text("\u062a\u0648\u0628 \u0627\u0644\u0646\u0642\u0627\u0637")
     draw.text((title_x + title_w - 20, title_y + 12), title, font=font_regular, fill=TEXT_COLOR, anchor="ra")
 
     y_offset = PADDING + title_h + 20
@@ -111,7 +113,7 @@ def create_leaderboard_image(users_data: list, server_name: str) -> BytesIO:
         draw.text((avatar_x + avatar_size + 15, y_offset + 42), name_str, font=font_regular, fill=TEXT_COLOR)
         
         # Points (arabic right aligned)
-        points_str = get_arabic_text(f"{data.get('points', 0)} نقطة")
+        points_str = get_arabic_text(f"{data.get('points', 0)} \u0646\u0642\u0637\u0629")
         draw.text((PADDING + PANEL_WIDTH - 20, y_offset + 30), points_str, font=font_regular, fill=TEXT_COLOR, anchor="ra")
 
         y_offset += PANEL_HEIGHT + PANEL_SPACING
@@ -125,7 +127,7 @@ def create_leaderboard_image(users_data: list, server_name: str) -> BytesIO:
 def create_rank_card(user_name: str, avatar_bytes: bytes, points: int, rank: int, level: int) -> BytesIO:
     """Creates a horizontal single-user rank card."""
     BG_COLOR = (23, 24, 28)
-    PANEL_COLOR = (62, 93, 88)
+    PANEL_COLOR = (155, 62, 110)
     TEXT_COLOR = (255, 255, 255)
     
     img = Image.new('RGB', (600, 150), color=BG_COLOR)
@@ -176,7 +178,7 @@ def create_rank_card(user_name: str, avatar_bytes: bytes, points: int, rank: int
     draw.text((avatar_x + avatar_size + 20, avatar_y + 55), rank_str, font=font_small, fill=(200, 200, 200))
     
     # Points (arabic)
-    points_str = get_arabic_text(f"{points} نقطة")
+    points_str = get_arabic_text(f"{points} \u0646\u0642\u0637\u0629")
     draw.text((560, avatar_y + 35), points_str, font=font_large, fill=TEXT_COLOR, anchor="ra")
 
     buffer = BytesIO()

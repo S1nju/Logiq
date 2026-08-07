@@ -49,7 +49,8 @@ class TempVoice(commands.Cog):
 
         # Check if a temp channel is now empty
         if before.channel and before.channel.id in self.temp_channels:
-            if len(before.channel.members) == 0:
+            humans = [m for m in before.channel.members if not m.bot]
+            if len(humans) == 0:
                 try:
                     await before.channel.delete(reason="Temporary channel empty")
                     self.temp_channels.discard(before.channel.id)

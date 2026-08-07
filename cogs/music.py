@@ -11,6 +11,21 @@ import logging
 from utils.i18n import t
 import asyncio
 import yt_dlp
+import os
+import certifi
+import ssl
+
+# Force python SSL context to use certifi bundle directly inside Docker
+os.environ["SSL_CERT_FILE"] = certifi.where()
+os.environ["REQUESTS_CA_BUNDLE"] = certifi.where()
+
+# Nuke SSL strict verification for yt-dlp exceptions
+try:
+    _create_unverified_https_context = ssl._create_unverified_context
+except AttributeError:
+    pass
+else:
+    ssl._create_default_https_context = _create_unverified_https_context
 
 from utils.embeds import EmbedFactory, EmbedColor
 from utils.permissions import is_admin
@@ -181,28 +196,44 @@ class Music(commands.Cog):
         self.module_config = config.get('modules', {}).get('music', {})
         self.queues = {}  # guild_id: MusicQueue
 
-    def play_next(self, guild_id: int):
+    async def async_play_next(self, guild_id: int):
+        logger.info(f"async_play_next triggered for guild {guild_id}")
         vc = self.bot.get_guild(guild_id).voice_client
         if not vc:
+            logger.warning("async_play_next aborted: No VC active")
             return
         
         queue = self.queues.get(guild_id)
         if not queue:
+            logger.warning("async_play_next aborted: No queue found")
             return
             
         track = queue.next()
         if not track:
+            logger.info("async_play_next finished: Queue completely empty")
             return
 
-        async def stream_and_play():
-            try:
-                player = await YTDLSource.from_url(track, loop=self.bot.loop, stream=True)
-                vc.play(player, after=lambda _: self.play_next(guild_id))
-            except Exception as e:
-                logger.error(f"Error streaming track {track}: {e}")
-                self.play_next(guild_id)
-                
-        asyncio.run_coroutine_threadsafe(stream_and_play(), self.bot.loop)
+        logger.info(f"Preparing to stream track: {track}")
+        try:
+            logger.info(f"Extracting YTDLInfo for: {track}")
+            player = await YTDLSource.from_url(track, loop=self.bot.loop, stream=True)
+            logger.info(f"Extraction successful: Playing {player.title}")
+            
+            def after_playback(e):
+                if e:
+                    logger.error(f"Playback error: {e}")
+                fut = asyncio.run_coroutine_threadsafe(self.async_play_next(guild_id), self.bot.loop)
+                try:
+                    fut.result()
+                except Exception as ex:
+                    logger.error(f"Error stepping queue: {ex}")
+
+            vc.play(player, after=after_playback)
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            logger.error(f"Error streaming track {track}: {e}")
+            await self.async_play_next(guild_id)
 
     def get_queue(self, guild_id: int) -> MusicQueue:
         """Get or create queue for guild"""
@@ -221,10 +252,6 @@ class Music(commands.Cog):
                 ephemeral=True
             )
             return
-
-        await interaction.response.defer()
-
-        # Check if bot is in voice
         if not interaction.guild.voice_client:
             try:
                 await interaction.user.voice.channel.connect()
@@ -241,7 +268,7 @@ class Music(commands.Cog):
         
         vc = interaction.guild.voice_client
         if not vc.is_playing() and not vc.is_paused():
-            self.play_next(interaction.guild.id)
+            await self.async_play_next(interaction.guild.id)
 
         embed = EmbedFactory.success(
             "Added to Queue",
@@ -273,6 +300,8 @@ class Music(commands.Cog):
 
         embed = EmbedFactory.success("Joined", f"Joined {channel.mention}")
         await interaction.followup.send(embed=embed)
+
+           
 
     @app_commands.command(name="leave", description="Leave voice channel")
     async def leave(self, interaction: discord.Interaction):
