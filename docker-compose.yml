@@ -1,0 +1,29 @@
+services:
+  logiq:
+    build:
+      context: .
+      dockerfile: DockerFile
+    container_name: logiq
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "6666:6666"
+    volumes:
+      - ./data:/app/data
+    networks:
+      - default
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./data:/data/db
+    networks:
+      - default
+
+networks:
+  default:
+    driver: bridge
