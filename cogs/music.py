@@ -10,6 +10,8 @@ from typing import Optional
 import logging
 from utils.i18n import t
 import asyncio
+import aiohttp
+import re
 import yt_dlp
 import os
 import certifi
@@ -271,6 +273,22 @@ class Music(commands.Cog):
                     ephemeral=True
                 )
                 return
+
+        # Check for Spotify links and convert to search query
+        if "open.spotify.com/track/" in query:
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(query) as response:
+                        text = await response.text()
+                        match = re.search(r'<title>(.*?)</title>', text)
+                        if match:
+                            title = match.group(1)
+                            title = title.replace(" - song and lyrics by ", " ")
+                            title = title.split(" | Spotify")[0]
+                            query = title
+                            logger.info(f"Converted Spotify link to query: {query}")
+            except Exception as e:
+                logger.error(f"Failed to parse Spotify link: {e}")
 
         # Add to queue
         queue = self.get_queue(interaction.guild.id)
