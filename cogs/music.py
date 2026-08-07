@@ -262,7 +262,6 @@ class Music(commands.Cog):
             )
             return
 
-        await interaction.response.defer()
         if not interaction.guild.voice_client:
             try:
                 await interaction.user.voice.channel.connect()
@@ -279,7 +278,7 @@ class Music(commands.Cog):
         
         vc = interaction.guild.voice_client
         if not vc.is_playing() and not vc.is_paused():
-            await self.async_play_next(interaction.guild.id)
+            self.bot.loop.create_task(self.async_play_next(interaction.guild.id))
 
         embed = EmbedFactory.success(
             "Added to Queue",
