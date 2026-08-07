@@ -16,7 +16,7 @@ database:
   mongodb_uri: ${MONGODB_URI}
   pool_size: 10
 i18n:
-  language: en
+  language: ar
 logging:
   date_format: '%Y-%m-%d %H:%M:%S'
   file: logs/bot.log
