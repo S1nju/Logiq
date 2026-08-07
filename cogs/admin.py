@@ -8,6 +8,7 @@ from discord import app_commands
 from discord.ext import commands
 from typing import Optional
 import logging
+from utils.i18n import t
 import sys
 
 from utils.embeds import EmbedFactory, EmbedColor
@@ -114,19 +115,35 @@ class Admin(commands.Cog):
 
     @commands.command(name="sync")
     @commands.has_permissions(administrator=True)
-    async def sync_prefix(self, ctx: commands.Context):
-        """Sync command tree (Prefix Command: !sync)"""
+    async def sync_prefix(self, ctx: commands.Context, target: str = "global"):
+        """Sync command tree (Prefix Command: !sync, !sync guild, !sync clear)"""
         try:
-            synced = await self.bot.tree.sync()
-            embed = EmbedFactory.success(
-                t("admin.sync_success_title"),
-                t("admin.sync_success", count=len(synced))
-            )
+            if target.lower() == "guild":
+                self.bot.tree.copy_global_to(guild=ctx.guild)
+                synced = await self.bot.tree.sync(guild=ctx.guild)
+                embed = EmbedFactory.success(
+                    t("admin.sync_success_title"),
+                    f"Successfully synced {len(synced)} commands to this guild."
+                )
+            elif target.lower() == "clear":
+                self.bot.tree.clear_commands(guild=ctx.guild)
+                await self.bot.tree.sync(guild=ctx.guild)
+                embed = EmbedFactory.success(
+                    "Commands Cleared",
+                    "Successfully cleared and unsynced all duplicated guild-specific commands."
+                )
+            else:
+                synced = await self.bot.tree.sync()
+                embed = EmbedFactory.success(
+                    t("admin.sync_success_title"),
+                    t("admin.sync_success", count=len(synced))
+                )
+            
             await ctx.send(embed=embed)
-            logger.info(f"{ctx.author} synced commands via prefix command")
+            logger.info(f"{ctx.author} synced commands ({target})")
         except Exception as e:
             await ctx.send(embed=EmbedFactory.error(t("common.error"), t("admin.sync_failed", error=str(e))))
-            logger.error(f"Error syncing commands via prefix command: {e}", exc_info=True)
+            logger.error(f"Error syncing commands ({target}): {e}", exc_info=True)
 
     @app_commands.command(name="modules", description="View and toggle modules")
     @is_admin()

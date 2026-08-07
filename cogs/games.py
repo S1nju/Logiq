@@ -8,6 +8,7 @@ from discord import app_commands
 from discord.ext import commands
 from typing import Optional
 import logging
+from utils.i18n import t
 import random
 
 from utils.embeds import EmbedFactory, EmbedColor
@@ -23,6 +24,9 @@ class DiceGameView(discord.ui.View):
     def __init__(self, cog):
         super().__init__(timeout=None)
         self.cog = cog
+        for item in self.children:
+            if isinstance(item, discord.ui.Button) and item.custom_id == "dice_roll":
+                item.label = t("games.dice_roll", default="🎲 Roll Dice")
 
     @discord.ui.button(label="🎲 Roll Dice", style=discord.ButtonStyle.primary, custom_id="dice_roll")
     async def roll_dice(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -44,6 +48,12 @@ class CoinFlipView(discord.ui.View):
     def __init__(self, cog):
         super().__init__(timeout=None)
         self.cog = cog
+        for item in self.children:
+            if isinstance(item, discord.ui.Button):
+                if item.custom_id == "coin_heads":
+                    item.label = t("games.coin_heads", default="🪙 Heads")
+                elif item.custom_id == "coin_tails":
+                    item.label = t("games.coin_tails", default="🪙 Tails")
 
     @discord.ui.button(label="🪙 Heads", style=discord.ButtonStyle.success, custom_id="coin_heads")
     async def flip_heads(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -130,6 +140,9 @@ class EightBallView(discord.ui.View):
     def __init__(self, cog):
         super().__init__(timeout=None)
         self.cog = cog
+        for item in self.children:
+            if isinstance(item, discord.ui.Button) and item.custom_id == "8ball_ask":
+                item.label = t("games.ask_8ball", default="🔮 Ask the Magic 8-Ball")
 
     @discord.ui.button(label="🔮 Ask the Magic 8-Ball", style=discord.ButtonStyle.primary, custom_id="8ball_ask")
     async def ask_8ball(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -159,6 +172,9 @@ class TriviaStartView(discord.ui.View):
     def __init__(self, cog):
         super().__init__(timeout=None)
         self.cog = cog
+        for item in self.children:
+            if isinstance(item, discord.ui.Button) and item.custom_id == "trivia_start":
+                item.label = t("games.trivia_start", default="🧠 Play Trivia")
 
     @discord.ui.button(label="🧠 Play Trivia", style=discord.ButtonStyle.success, custom_id="trivia_start")
     async def start_trivia(self, interaction: discord.Interaction, button: discord.ui.Button):

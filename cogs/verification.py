@@ -79,17 +79,23 @@ class VerificationSetupModal(discord.ui.Modal, title="Verification Setup"):
 logger = logging.getLogger(__name__)
 
 
+from utils.i18n import t
+
 class VerificationButton(discord.ui.View):
     """Button-based verification view"""
 
     def __init__(self, cog: 'Verification'):
         super().__init__(timeout=None)
         self.cog = cog
+        for item in self.children:
+            if isinstance(item, discord.ui.Button) and item.custom_id == "verify_button":
+                item.label = t("verification.verify_button")
 
     @discord.ui.button(label="Verify", style=discord.ButtonStyle.green, custom_id="verify_button", emoji="✅")
     async def verify_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Handle verification button click"""
         await self.cog.verify_user(interaction)
+
 
 
 class CaptchaModal(discord.ui.Modal, title="Verification Captcha"):

@@ -8,6 +8,7 @@ from discord import app_commands
 from discord.ext import commands
 from typing import Optional, Dict, List
 import logging
+from utils.i18n import t
 import aiohttp
 
 from utils.embeds import EmbedFactory, EmbedColor

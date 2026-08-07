@@ -9,6 +9,7 @@ from discord.ext import commands
 from datetime import datetime, timedelta
 from typing import Optional
 import logging
+from utils.i18n import t
 import random
 import asyncio
 
@@ -27,6 +28,9 @@ class GiveawayView(discord.ui.View):
         super().__init__(timeout=None)
         self.giveaway_id = giveaway_id
         self.cog = cog
+        for item in self.children:
+            if isinstance(item, discord.ui.Button) and item.custom_id == "giveaway_enter":
+                item.label = t("giveaways.enter", default="🎉 Enter Giveaway")
 
     @discord.ui.button(label="🎉 Enter Giveaway", style=discord.ButtonStyle.success, custom_id="giveaway_enter")
     async def enter_giveaway(self, interaction: discord.Interaction, button: discord.ui.Button):

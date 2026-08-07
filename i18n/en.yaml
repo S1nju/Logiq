@@ -119,8 +119,14 @@ tickets:
   created_desc: "Your support ticket has been created!"
   ticket_id: "Ticket ID"
   category: "Category"
+  create_button: "Create Ticket"
+  close_button: "Close Ticket"
+  panel_title: "🎫 Support Tickets"
+  panel_desc: "Need help? Click the button below to create a support ticket!\n\nA private channel will be created where you can discuss your issue with staff."
 
 verification:
   prompt_title: "🔐 Verification Required"
   prompt_desc: "Click the button below to verify and gain access to the server."
   prompt_footer: "Complete verification to unlock all channels"
+  verify_button: "Verify"
+

@@ -62,20 +62,20 @@ class I18nManager:
                 logger.warning(f"Translation file missing: {file_path}")
                 self.translations[lang_code] = {}
 
-    def get(self, key_path: str, lang: Optional[str] = None, **kwargs) -> str:
+    def get(self, key_path: str, lang: Optional[str] = None, default: Optional[str] = None, **kwargs) -> str:
         """
         Get translated string for key path or direct text phrase.
         Example: get('admin.reload_success', cog='moderation') or get('Commands Synced')
         """
         target_lang = lang if (lang and lang in SUPPORTED_LANGUAGES) else self.current_language
         
-        # Try target language, fallback to English, fallback to key_path itself
+        # Try target language, fallback to English, fallback to default or key_path itself
         translation = self._resolve_key(target_lang, key_path)
         if translation is None and target_lang != DEFAULT_LANGUAGE:
             translation = self._resolve_key(DEFAULT_LANGUAGE, key_path)
         
         if translation is None:
-            return key_path
+            return default if default is not None else key_path
 
         if isinstance(translation, str) and kwargs:
             try:
@@ -85,6 +85,7 @@ class I18nManager:
                 return translation
 
         return str(translation)
+
 
     def _resolve_key(self, lang: str, key_path: str) -> Optional[Any]:
         """Traverse nested dict for key_path e.g. 'admin.reload_success' or phrase lookup"""
@@ -174,6 +175,7 @@ class I18nManager:
 i18n = I18nManager()
 
 
-def t(key_path: str, lang: Optional[str] = None, **kwargs) -> str:
+def t(key_path: str, lang: Optional[str] = None, default: Optional[str] = None, **kwargs) -> str:
     """Shorthand global helper function for i18n lookup"""
-    return i18n.get(key_path, lang=lang, **kwargs)
+    return i18n.get(key_path, lang=lang, default=default, **kwargs)
+

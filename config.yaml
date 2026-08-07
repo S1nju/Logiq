@@ -7,7 +7,7 @@ api_keys:
 bot:
   activity: Managing your community
   activity_type: watching
-  language: ar
+  language: en
   prefix: /
   status: online
   token: ${DISCORD_BOT_TOKEN}
@@ -16,7 +16,7 @@ database:
   mongodb_uri: ${MONGODB_URI}
   pool_size: 10
 i18n:
-  language: ar
+  language: en
 logging:
   date_format: '%Y-%m-%d %H:%M:%S'
   file: logs/bot.log

@@ -12,6 +12,7 @@ import asyncio
 
 from utils.embeds import EmbedFactory, EmbedColor
 from utils.permissions import is_admin
+from utils.i18n import t
 from database.db_manager import DatabaseManager
 
 logger = logging.getLogger(__name__)
@@ -23,6 +24,10 @@ class TicketCreateView(discord.ui.View):
     def __init__(self, cog: 'Tickets'):
         super().__init__(timeout=None)
         self.cog = cog
+        # Dynamically set button label based on language
+        for item in self.children:
+            if isinstance(item, discord.ui.Button) and item.custom_id == "create_ticket":
+                item.label = t("tickets.create_button")
 
     @discord.ui.button(label="Create Ticket", style=discord.ButtonStyle.green, custom_id="create_ticket", emoji="🎫")
     async def create_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -36,11 +41,15 @@ class TicketControlView(discord.ui.View):
     def __init__(self, cog: 'Tickets'):
         super().__init__(timeout=None)
         self.cog = cog
+        for item in self.children:
+            if isinstance(item, discord.ui.Button) and item.custom_id == "close_ticket_btn":
+                item.label = t("tickets.close_button")
 
     @discord.ui.button(label="Close Ticket", style=discord.ButtonStyle.danger, custom_id="close_ticket_btn", emoji="🔒")
     async def close_ticket_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Handle ticket closing via button"""
         await self.cog.close_ticket_for_user(interaction, "Closed by user")
+
 
 
 class Tickets(commands.Cog):
@@ -290,11 +299,11 @@ class Tickets(commands.Cog):
     async def ticket_panel(self, interaction: discord.Interaction):
         """Send persistent ticket panel (ADMIN ONLY)"""
         embed = EmbedFactory.create(
-            title="🎫 Support Tickets",
-            description="Need help? Click the button below to create a support ticket!\n\n"
-                       "A private channel will be created where you can discuss your issue with staff.",
+            title=t("tickets.panel_title", default="🎫 Support Tickets"),
+            description=t("tickets.panel_desc", default="Need help? Click the button below to create a support ticket!\n\nA private channel will be created where you can discuss your issue with staff."),
             color=EmbedColor.PRIMARY
         )
+
 
         view = TicketCreateView(self)
         await interaction.channel.send(embed=embed, view=view)

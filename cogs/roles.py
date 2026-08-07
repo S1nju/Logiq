@@ -8,6 +8,7 @@ from discord import app_commands
 from discord.ext import commands
 from typing import Optional, List
 import logging
+from utils.i18n import t
 
 from utils.embeds import EmbedFactory, EmbedColor
 from utils.permissions import is_admin
@@ -50,9 +51,17 @@ class RoleMenuSetupModal(discord.ui.Modal, title="Create Role Menu"):
     )
 
     def __init__(self, cog, channel):
-        super().__init__()
+        super().__init__(title=t("roles.modal_title", default="Create Role Menu"))
         self.cog = cog
         self.channel = channel
+        self.title_input.label = t("roles.title_input", default="Menu Title")
+        self.title_input.placeholder = t("roles.title_placeholder", default="e.g., Choose Your Roles")
+        self.description_input.label = t("roles.desc_input", default="Menu Description")
+        self.description_input.placeholder = t("roles.desc_placeholder", default="e.g., Select your preferred roles from the dropdown below")
+        self.role_mentions.label = t("roles.mentions_input", default="Roles (mention with @)")
+        self.role_mentions.placeholder = t("roles.mentions_placeholder", default="Type @ and select roles. Example: @Gamer @Artist @Developer")
+        self.exclusive.label = t("roles.exclusive_input", default="Exclusive? (yes/no)")
+        self.exclusive.placeholder = t("roles.exclusive_placeholder", default="Type 'yes' if users can only pick ONE role")
 
     async def on_submit(self, interaction: discord.Interaction):
         """Handle modal submission"""
@@ -149,7 +158,7 @@ class ExclusiveRoleSelect(discord.ui.Select):
         options = [
             discord.SelectOption(
                 label=r['label'],
-                description=f"Get the {r['label']} role",
+                description=t("roles.get_role", default="Get the {role} role", role=r['label']),
                 value=str(r['role'].id),
                 emoji=r['emoji']
             )
@@ -157,7 +166,7 @@ class ExclusiveRoleSelect(discord.ui.Select):
         ]
 
         super().__init__(
-            placeholder=f"Choose your option...",
+            placeholder=t("roles.select_placeholder", default="Choose your option..."),
             min_values=1,
             max_values=1,
             options=options,
@@ -230,7 +239,7 @@ class MultiRoleSelect(discord.ui.Select):
         options = [
             discord.SelectOption(
                 label=r['label'],
-                description=f"Toggle {r['label']} role",
+                description=t("roles.toggle_role", default="Toggle {role} role", role=r['label']),
                 value=str(r['role'].id),
                 emoji=r['emoji']
             )
@@ -238,7 +247,7 @@ class MultiRoleSelect(discord.ui.Select):
         ]
 
         super().__init__(
-            placeholder="Select roles to add/remove...",
+            placeholder=t("roles.multi_placeholder", default="Select roles to add/remove..."),
             min_values=0,
             max_values=len(options),
             options=options,

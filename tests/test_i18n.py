@@ -81,6 +81,21 @@ class TestI18n(unittest.TestCase):
         self.assertEqual(t("Cog Reloaded"), "تم إعادة تحميل الإضافة")
         self.assertEqual(t("⚠️ No Warnings"), "⚠️ لا توجد تحذيرات")
 
+    def test_ticket_translations(self):
+        """Test ticket button and panel translations"""
+        from utils.i18n import i18n
+        i18n.set_language("ar")
+        self.assertEqual(t("tickets.create_button"), "إنشاء تذكرة")
+        self.assertEqual(t("tickets.close_button"), "إغلاق التذكرة")
+        self.assertEqual(t("tickets.panel_title"), "🎫 تذاكر الدعم")
+        self.assertIn("هل تحتاج إلى مساعدة؟", t("tickets.panel_desc"))
+
+        i18n.set_language("en")
+        self.assertEqual(t("tickets.create_button"), "Create Ticket")
+        self.assertEqual(t("tickets.close_button"), "Close Ticket")
+        self.assertEqual(t("tickets.panel_title"), "🎫 Support Tickets")
+
+
 
 
 

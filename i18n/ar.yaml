@@ -1,202 +1,324 @@
-# Arabic Translations for Logiq Bot
-
-common:
-  success: "نجاح"
-  error: "خطأ"
-  warning: "تحذير"
-  info: "معلومات"
-  no_permission: "ليس لديك صلاحية لاستخدام هذا الأمر."
-  missing_argument: "المعامل المطلوب مفقود: {param}"
-  invalid_amount: "الكمية غير صالحة"
-  invalid_duration: "المدة غير صالحة"
-  none: "لا يوجد"
-  unknown: "غير معروف"
-  not_set: "غير محدد"
-
-language:
-  set_success_title: "🌐 تم تحديث اللغة"
-  set_success: "تم تحديث لغة البوت إلى **{lang_name} ({lang_code})** بنجاح!"
-  current: "اللغة الحالية: **{lang_name} ({lang_code})**"
-  invalid: "خيار اللغة غير صالحة. اللغات المدعومة: **الإنجليزي (en)**، **العربي (ar)**"
-  command_desc: "تغيير إعداد لغة البوت (للإدارة)"
-
 admin:
-  reload_desc: "إعادة تحميل إضافة (Cog)"
-  reload_success_title: "تم إعادة تحميل الإضافة"
-  reload_success: "تم إعادة تحميل الإضافة **{cog}** بنجاح"
-  reload_not_loaded: "الإضافة **{cog}** غير محملة"
-  reload_not_found: "الإضافة **{cog}** غير موجودة"
-  reload_failed: "فشل إعادة التحميل: {error}"
-  
-  sync_desc: "مزامنة أوامر السلاش (Slash Commands)"
-  sync_success_title: "تمت مزامنة الأوامر"
-  sync_success: "تمت مزامنة **{count}** من الأوامر بنجاح"
-  sync_failed: "فشلت المزامنة: {error}"
-  
-  modules_desc: "عرض وتفعيل/تعطيل الوحدات"
-  modules_title: "📦 وحدات البوت"
-  modules_empty: "لا توجد وحدات مُعدة"
-  
-  botinfo_desc: "عرض معلومات البوت"
-  botinfo_title: "🤖 معلومات Logiq"
-  
-  setlogchannel_desc: "تحديد قناة السجلات"
-  setlogchannel_success_title: "تم تعيين قناة السجلات"
-  setlogchannel_success: "سيتم إرسال سجلات الإشراف إلى {channel}"
-  
-  config_desc: "عرض إعدادات السيرفر"
-  config_title: "⚙️ إعدادات السيرفر"
-  config_none: "لا توجد إعدادات لهذا السيرفر بعد"
-  
-  purge_desc: "حذف الرسائل بالجملة"
-  purge_success_title: "تم حذف الرسائل"
-  purge_success: "تم حذف **{count}** رسالة"
-  purge_invalid: "العدد يجب أن يكون بين 1 و 100"
-  purge_no_permission: "ليس لدي صلاحية لحذف الرسائل"
-
-utility:
-  poll_desc: "إنشاء تصويت"
-  poll_results: "📊 نتائج التصويت"
-  poll_total_votes: "إجمالي الأصوات: {count}"
-  poll_invalid_duration: "المدة يجب أن تكون بين دقيقة واحدة وأسبوع واحد"
-  poll_ends_in: "ينتهي التصويت خلال {duration} دقيقة | إجمالي الأصوات: {count}"
-  
-  remind_desc: "تعيين تذكير"
-  remind_success_title: "تم تعيين التذكير"
-  remind_success: "سأقوم بتذكيرك خلال **{duration}**\n\nالرسالة: {message}"
-  remind_invalid_duration: "يرجى تحديد مدة صالحة (مثال: 1h, 30m, 2d)"
-  remind_too_long: "الحد الأقصى لمدة التذكير هو سنة واحدة"
-  remind_notification_title: "⏰ تذكير"
-  
-  serverstats_desc: "عرض إحصائيات السيرفر"
-  serverstats_title: "📊 إحصائيات السيرفر - {name}"
-  total_members: "👥 إجمالي الأعضاء"
-  humans: "🙋 الأعضاء"
-  bots: "🤖 البوتات"
-  text_channels: "💬 القنوات النصية"
-  voice_channels: "🔊 القنوات الصوتية"
-  roles: "🎭 الرتب"
-  owner: "👑 الماليك"
-  created: "📅 تاريخ الإنشاء"
-  boost_level: "🚀 مستوى الترقية (Boost)"
-  
-  userinfo_desc: "الحصول على معلومات المستخدم"
-  userinfo_title: "معلومات المستخدم - {name}"
-  username: "اسم المستخدم"
-  id: "المعرف (ID)"
-  nickname: "اللقب"
-  account_created: "تاريخ إنشاء الحساب"
-  joined_server: "تاريخ الانضمام للسيرفر"
-  top_role: "أعلى رتبة"
-  
-  avatar_desc: "عرض صورة المستخدم الشخصية"
-  avatar_title: "الصورة الشخصية - {name}"
-
-moderation:
-  action_title: "🔨 {action}"
-  action_desc: "تم تنفيذ {action} بحق {user}"
-  reason: "السبب"
-  moderator: "المشرف"
-  target_user: "المستخدم"
-
-leveling:
-  level_up_title: "🎉 ارتفاع المستوى!"
-  level_up_desc: "{user} وصل للتو إلى **المستوى {level}**!"
-  rank_title: "📊 بطاقة الرتبة - {user}"
-  rank: "الرتبة"
-  level: "المستوى"
-  xp: "الخبرة (XP)"
-  progress: "التقدم"
-  leaderboard_title: "🏆 {title}"
-
+  botinfo_desc: عرض معلومات البوت
+  botinfo_title: 🤖 معلومات Logiq
+  config_desc: عرض إعدادات السيرفر
+  config_none: لا توجد إعدادات لهذا السيرفر بعد
+  config_title: ⚙️ إعدادات السيرفر
+  modules_desc: عرض وتفعيل/تعطيل الوحدات
+  modules_empty: لا توجد وحدات مُعدة
+  modules_title: 📦 وحدات البوت
+  purge_desc: حذف الرسائل بالجملة
+  purge_invalid: العدد يجب أن يكون بين 1 و 100
+  purge_no_permission: ليس لدي صلاحية لحذف الرسائل
+  purge_success: تم حذف **{count}** رسالة
+  purge_success_title: تم حذف الرسائل
+  reload_desc: إعادة تحميل إضافة (Cog)
+  reload_failed: 'فشل إعادة التحميل: {error}'
+  reload_not_found: الإضافة **{cog}** غير موجودة
+  reload_not_loaded: الإضافة **{cog}** غير محملة
+  reload_success: تم إعادة تحميل الإضافة **{cog}** بنجاح
+  reload_success_title: تم إعادة تحميل الإضافة
+  setlogchannel_desc: تحديد قناة السجلات
+  setlogchannel_success: سيتم إرسال سجلات الإشراف إلى {channel}
+  setlogchannel_success_title: تم تعيين قناة السجلات
+  sync_desc: مزامنة أوامر السلاش (Slash Commands)
+  sync_failed: 'فشلت المزامنة: {error}'
+  sync_success: تمت مزامنة **{count}** من الأوامر بنجاح
+  sync_success_title: تمت مزامنة الأوامر
+common:
+  error: خطأ
+  info: معلومات
+  invalid_amount: الكمية غير صالحة
+  invalid_duration: المدة غير صالحة
+  missing_argument: 'المعامل المطلوب مفقود: {param}'
+  no_permission: ليس لديك صلاحية لاستخدام هذا الأمر.
+  none: لا يوجد
+  not_set: غير محدد
+  success: نجاح
+  unknown: غير معروف
+  warning: تحذير
 economy:
-  balance_title: "رصيد {symbol}"
-  balance_desc: "رصيد {user}"
-  amount: "المبلغ"
-
-tickets:
-  created_title: "🎫 تم إنشاء التذكرة"
-  created_desc: "تم إنشاء تذكرة الدعم الخاصة بك!"
-  ticket_id: "معرف التذكرة"
-  category: "الفئة"
-
-verification:
-  prompt_title: "🔐 التحقق مطلوب"
-  prompt_desc: "انقر على الزر أدناه للتحقق والحصول على الوصول إلى السيرفر."
-  prompt_footer: "أكمل التحقق لفتح جميع القنوات"
-
+  amount: المبلغ
+  balance_desc: رصيد {user}
+  balance_title: رصيد {symbol}
+language:
+  command_desc: تغيير إعداد لغة البوت (للإدارة)
+  current: 'اللغة الحالية: **{lang_name} ({lang_code})**'
+  invalid: 'خيار اللغة غير صالحة. اللغات المدعومة: **الإنجليزي (en)**، **العربي (ar)**'
+  set_success: تم تحديث لغة البوت إلى **{lang_name} ({lang_code})** بنجاح!
+  set_success_title: 🌐 تم تحديث اللغة
+leveling:
+  leaderboard_title: 🏆 {title}
+  level: المستوى
+  level_up_desc: '{user} وصل للتو إلى **المستوى {level}**!'
+  level_up_title: 🎉 ارتفاع المستوى!
+  progress: التقدم
+  rank: الرتبة
+  rank_title: 📊 بطاقة الرتبة - {user}
+  xp: الخبرة (XP)
+moderation:
+  action_desc: تم تنفيذ {action} بحق {user}
+  action_title: 🔨 {action}
+  moderator: المشرف
+  reason: السبب
+  target_user: المستخدم
 phrases:
-  "Commands Synced": "تمت مزامنة الأوامر"
-  "Cog Reloaded": "تم إعادة تحميل الإضافة"
-  "Error": "خطأ"
-  "Warning": "تحذير"
-  "Success": "نجاح"
-  "Info": "معلومات"
-  "Bot Modules": "📦 وحدات البوت"
-  "Logiq Information": "🤖 معلومات Logiq"
-  "Log Channel Set": "تم تعيين قناة السجلات"
-  "Server Configuration": "⚙️ إعدادات السيرفر"
-  "No Configuration": "لا توجد إعدادات"
-  "Server has no configuration yet": "لا توجد إعدادات لهذا السيرفر بعد"
-  "Invalid Amount": "الكمية غير صالحة"
-  "Messages Purged": "تم حذف الرسائل"
-  "Log Channel": "قناة السجلات"
-  "Welcome Channel": "قناة الترحيب"
-  "Verified Role": "رتبة التحقق"
-  "Verification Type": "نوع التحقق"
-  "Servers": "📊 السيرفرات"
-  "Users": "👥 المستخدمون"
-  "Channels": "📺 القنوات"
-  "Uptime": "⏰ مدة التشغيل"
-  "Python Version": "🐍 إصدار Python"
-  "Discord.py": "📚 Discord.py"
-  "Database": "💾 قاعدة البيانات"
-  "Latency": "🔗 زمن الاستجابة"
-  "No Warnings": "لا توجد تحذيرات"
-  "Cannot Warn": "تعذر إرسال التحذير"
-  "You have been warned": "لقد تلقيت تحذيراً"
-  "Cannot Timeout": "تعذر حظر المستخدم مؤقتاً"
-  "Cannot Kick": "تعذر طرد المستخدم"
-  "Cannot Ban": "تعذر حظر المستخدم"
-  "User Unbanned": "تم إلغاء حظر المستخدم"
-  "Messages Cleared": "تم مسح الرسائل"
-  "Slowmode Enabled": "تم تفعيل الوضع البطيء"
-  "Slowmode Disabled": "تم تعطيل الوضع البطيء"
-  "Channel Locked": "🔒 تم قفل القناة"
-  "Channel Unlocked": "🔓 تم فتح القناة"
-  "Nickname Changed": "تم تغيير اللقب"
-  "Nickname Reset": "تم إعادة ضبط اللقب"
-  "User": "المستخدم"
-  "Moderator": "المشرف"
-  "Reason": "السبب"
-  "Rank": "الرتبة"
-  "Level": "المستوى"
-  "XP": "الخبرة (XP)"
-  "Total XP": "إجمالي الخبرة (XP)"
-  "Progress": "التقدم"
-  "Amount": "المبلغ"
-  "Balance": "الرصيد"
-  "Ticket Created": "🎫 تم إنشاء التذكرة"
-  "Ticket ID": "معرف التذكرة"
-  "Category": "الفئة"
-  "Verification Required": "🔐 التحقق مطلوب"
-  "AI Response": "🤖 رد الذكاء الاصطناعي"
-  "Level Up!": "🎉 ارتفاع المستوى!"
-  "Not set": "غير محدد"
-  "Total Warnings": "إجمالي التحذيرات"
-  "Duration": "المدة"
-  "Server": "السيرفر"
-  "Warnings for": "تحذيرات"
-  "Total warnings:": "إجمالي التحذيرات:"
-  "Invalid Duration": "المدة غير صالحة"
-  "Duration must be valid and less than 28 days": "المدة يجب أن تكون صالحة وأقل من 28 يوماً"
-  "You have been timed out": "تم حظرك مؤقتاً"
-  "No reason provided": "لم يتم تقديم سبب"
-  "Cannot Kick": "تعذر طرد المستخدم"
-  "Cannot Ban": "تعذر حظر المستخدم"
-  "Cannot Unban": "تعذر إلغاء حظر المستخدم"
-  "User Not Banned": "المستخدم غير محظور"
-  "Slowmode": "الوضع البطيء"
-  "Slowmode Off": "إيقاف الوضع البطيء"
+  AI Chat: الحديث مع الذكاء الاصطناعي
+  AI Response: 🤖 رد الذكاء الاصطناعي
+  Active Tickets: التذاكر النشطة
+  Added to Queue: تم الإضافة إلى القائمة
+  Alert Added: تم إضافة التنبيه
+  Alert Removed: تمت إزالة التنبيه
+  Already Entered: تم الدخول بالفعل
+  Already Exists: موجود بالفعل
+  Already Verified: متحقق بالفعل
+  Amount: المبلغ
+  Balance: الرصيد
+  Balance Added: تم إضافة الرصيد
+  Bot Modules: 📦 وحدات البوت
+  Cannot Ban: تعذر حظر المستخدم
+  Cannot Kick: تعذر طرد المستخدم
+  Cannot Timeout: تعذر حظر المستخدم مؤقتاً
+  Cannot Unban: تعذر إلغاء حظر المستخدم
+  Cannot Warn: تعذر إرسال التحذير
+  Category: الفئة
+  Channel Locked: 🔒 تم قفل القناة
+  Channel Not Found: القناة غير موجودة
+  Channel Unlocked: 🔓 تم فتح القناة
+  Channels: 📺 القنوات
+  Close Ticket: إغلاق التذكرة
+  Cog Reloaded: تم إعادة تحميل الإضافة
+  Coinflip: رمي العملة
+  Commands Synced: تمت مزامنة الأوامر
+  Connection Failed: فشل الاتصال
+  Conversation Cleared: تم مسح المحادثة
+  Cooldown Active: فترة الانتظار نشطة
+  Correct! 🎉: صحيح! 🎉
+  Create Role Menu: إنشاء قائمة الرتب
+  Create Ticket: إنشاء تذكرة
+  Daily Reward: مكافأة يومية
+  Daily Reward Claimed!: تم استلام المكافأة اليومية!
+  Database: 💾 قاعدة البيانات
+  Disconnected: تم قطع الاتصال
+  Discord.py: 📚 Discord.py
+  Duration: المدة
+  Duration must be valid and less than 28 days: المدة يجب أن تكون صالحة وأقل من 28
+    يوماً
+  Empty Queue: قائمة التشغيل فارغة
+  Empty Shop: المتجر فارغ
+  Ending Giveaway: إنهاء السحب
+  Enter Code: إدخال الرمز
+  Enter the code shown: أدخل الرمز الموضح
+  Entered!: تم الدخول!
+  Error: خطأ
+  Game Panel Created: تم إنشاء لوحة الألعاب
+  Giveaway: مسابقة
+  Giveaway Ended: انتهى السحب
+  Incorrect! ❌: غير صحيح! ❌
+  Info: معلومات
+  Insufficient Funds: رصيد غير كافٍ
+  Invalid Amount: الكمية غير صالحة
+  Invalid Choice: اختيار غير صالح
+  Invalid Duration: المدة غير صالحة
+  Invalid Limit: حد غير صالح
+  Invalid Parameter: معلمة غير صالحة
+  Invalid Platform: منصة غير صالحة
+  Invalid Volume: مستوى صوت غير صالح
+  Invalid Winners: عدد فائزين غير صالح
+  Joined: تم الانضمام
+  Latency: 🔗 زمن الاستجابة
+  Leaderboard: لوحة الصدارة
+  Level: المستوى
+  Level Set: تم تعيين المستوى
+  Level Up!: 🎉 ارتفاع المستوى!
+  Log Channel: قناة السجلات
+  Log Channel Set: تم تعيين قناة السجلات
+  Logiq Information: 🤖 معلومات Logiq
+  Messages Cleared: تم مسح الرسائل
+  Messages Purged: تم حذف الرسائل
+  Missing Channel: القناة مفقودة
+  Moderator: المشرف
+  Module Disabled: الوحدة معطلة
+  Music Player: مشغل الموسيقى
+  Name Too Long: الاسم طويل جدًا
+  ? 'Need help? Click the button below to create a support ticket!
 
 
+    A private channel will be created where you can discuss your issue with staff.'
+  : 'هل تحتاج إلى مساعدة؟ انقر على الزر أدناه لإنشاء تذكرة دعم!
+
+
+    سيتم إنشاء قناة خاصة حيث يمكنك مناقشة مشكلتك مع فريق الدعم.'
+  New Ticket Created: تذكرة جديدة
+  Nickname Changed: تم تغيير اللقب
+  Nickname Reset: تم إعادة ضبط اللقب
+  No Active Tickets: لا توجد تذاكر نشطة
+  No Activity: لا يوجد نشاط
+  No Alerts: لا توجد تنبيهات
+  No Configuration: لا توجد إعدادات
+  No Data: لا توجد بيانات
+  No Messages: لا توجد رسائل
+  No Participants: لا يوجد مشاركون
+  No Permission: لا يوجد صلاحية
+  No Roles Found: لم يتم العثور على رتب
+  No Valid Roles: لا توجد رتب صالحة
+  No Warnings: لا توجد تحذيرات
+  No reason provided: لم يتم تقديم سبب
+  Not Configured: غير مُعد
+  Not Connected: غير متصل
+  Not Found: غير موجود
+  Not Paused: غير مؤقت
+  Not Playing: لا يوجد تشغيل
+  Not a Temp Channel: ليست قناة مؤقتة
+  Not a Ticket: ليست تذكرة
+  Not in Voice: لست في قناة صوتية
+  Not set: غير محدد
+  Nothing Playing: لا يوجد شيء قيد التشغيل
+  Panel Sent: تم إرسال اللوحة
+  Paused: متوقف مؤقتًا
+  Permission Error: خطأ في الصلاحيات
+  Progress: التقدم
+  Python Version: 🐍 إصدار Python
+  Rank: الرتبة
+  Rank Card: بطاقة الرتبة
+  Reason: السبب
+  Reset Levels: إعادة تعيين المستويات
+  Resumed: تم استئناف التشغيل
+  Role Added: تمت إضافة الرتبة
+  Role Removed: تمت إزالة الرتبة
+  Sent: تم الإرسال
+  Server: السيرفر
+  Server Configuration: ⚙️ إعدادات السيرفر
+  Server has no configuration yet: لا توجد إعدادات لهذا السيرفر بعد
+  Servers: 📊 السيرفرات
+  Show My Code: إظهار الرمز الخاص بي
+  Skipped: تم التخطي
+  Slowmode: الوضع البطيء
+  Slowmode Disabled: تم تعطيل الوضع البطيء
+  Slowmode Enabled: تم تفعيل الوضع البطيء
+  Slowmode Off: إيقاف الوضع البطيء
+  Stopped: تم الإيقاف
+  Success: نجاح
+  Support Ticket: تذكرة الدعم
+  Support Tickets: تذاكر الدعم
+  Test Sent: تم إرسال الاختبار
+  This is not for you!: هذا ليس لك!
+  This trivia has been answered!: تمت الإجابة على هذا السؤال!
+  This verification is not for you!: هذا التحقق ليس لك!
+  Ticket Closed: تم إغلاق التذكرة
+  Ticket Closing: جاري إغلاق التذكرة
+  Ticket Created: 🎫 تم إنشاء التذكرة
+  Ticket Exists: توجد تذكرة مفتوحة بالفعل
+  Ticket ID: معرف التذكرة
+  Ticket System Setup: تم إعداد نظام التذاكر
+  Title of the role menu: عنوان قائمة الرتب
+  Too Many Roles: عدد كبير جدًا من الرتب
+  Total Warnings: إجمالي التحذيرات
+  Total XP: إجمالي الخبرة (XP)
+  'Total warnings:': 'إجمالي التحذيرات:'
+  Transfer Complete: اكتمل النقل
+  Uptime: ⏰ مدة التشغيل
+  User: المستخدم
+  User Not Banned: المستخدم غير محظور
+  User Unbanned: تم إلغاء حظر المستخدم
+  Users: 👥 المستخدمون
+  Verification Captcha: رمز التحقق المرئي (Captcha)
+  Verification DM Failed: فشل إرسال رسالة التحقق
+  Verification Failed: فشل التحقق
+  Verification Required: 🔐 التحقق مطلوب
+  Verification Setup: إعداد التحقق
+  Verification Setup Complete: تم اكتمال إعداد التحقق
+  Verification Type: نوع التحقق
+  Verified Role: رتبة التحقق
+  Verified Successfully!: تم التحقق بنجاح!
+  Verify: تحقق
+  Volume: مستوى الصوت
+  Warning: تحذير
+  Warnings for: تحذيرات
+  Welcome Channel: قناة الترحيب
+  Welcome Message: رسالة الترحيب
+  XP: الخبرة (XP)
+  You Lost!: لقد خسرت!
+  You have been timed out: تم حظرك مؤقتاً
+  You have been warned: لقد تلقيت تحذيراً
+  ⏱️ Slowmode Updated: ⏱️ تم تحديث الوضع البطيء
+  ✅ Role Selected!: ✅ تم اختيار الرتبة!
+  ✅ Roles Updated!: ✅ تم تحديث الرتب!
+  ✅ Temporary Voice Setup: ✅ إعداد القنوات الصوتية المؤقتة
+  ✅ Welcome Message Updated: ✅ تم تحديث رسالة الترحيب
+  ✏️ Renamed: ✏️ تمت إعادة التسمية
+  🎉 GIVEAWAY 🎉: 🎉 سحب 🎉
+  🎉 Giveaway Rerolled: 🎉 تم إعادة السحب
+  🎉 Giveaway started!: 🎉 بدأ السحب!
+  🎉 You Won!: 🎉 لقد فزت!
+  🎮 Game Center: 🎮 مركز الألعاب
+  🎯 Trivia Time!: 🎯 وقت الأسئلة!
+  🎲 Dice Game: 🎲 لعبة النرد
+  🎲 Dice Roll: 🎲 رمي النرد
+  🎵 Music Queue: 🎵 قائمة الموسيقى
+  🎵 Now Playing: 🎵 يُشغل الآن
+  🏪 Server Shop: 🏪 متجر السيرفر
+  👑 Claimed: 👑 تم الاستحواذ
+  👥 Limit Set: 👥 تم تعيين الحد
+  📈 Server Activity (Last 24 Hours): 📈 نشاط السيرفر (آخر 24 ساعة)
+  📝 Conversation Summary: 📝 ملخص المحادثة
+  📢 Social Media Alerts: 📢 تنبيهات وسائل التواصل الاجتماعي
+  🔒 Locked: 🔒 مقفل
+  🔓 Unlocked: 🔓 مفتوح
+  🔮 Magic 8-Ball: 🔮 الكرة السحرية 8
+  🗑️ Messages Cleared: 🗑️ تم مسح الرسائل
+  🧠 Trivia Game: 🧠 لعبة أسئلة وأجوبة
+  🪙 Coinflip: 🪙 رمي العملة
+tickets:
+  category: الفئة
+  close_button: إغلاق التذكرة
+  create_button: إنشاء تذكرة
+  created_desc: تم إنشاء تذكرة الدعم الخاصة بك!
+  created_title: 🎫 تم إنشاء التذكرة
+  panel_desc: 'هل تحتاج إلى مساعدة؟ انقر على الزر أدناه لإنشاء تذكرة دعم!
+
+
+    سيتم إنشاء قناة خاصة حيث يمكنك مناقشة مشكلتك مع فريق الدعم.'
+  panel_title: 🎫 تذاكر الدعم
+  ticket_id: معرف التذكرة
+utility:
+  account_created: تاريخ إنشاء الحساب
+  avatar_desc: عرض صورة المستخدم الشخصية
+  avatar_title: الصورة الشخصية - {name}
+  boost_level: 🚀 مستوى الترقية (Boost)
+  bots: 🤖 البوتات
+  created: 📅 تاريخ الإنشاء
+  humans: 🙋 الأعضاء
+  id: المعرف (ID)
+  joined_server: تاريخ الانضمام للسيرفر
+  nickname: اللقب
+  owner: 👑 الماليك
+  poll_desc: إنشاء تصويت
+  poll_ends_in: 'ينتهي التصويت خلال {duration} دقيقة | إجمالي الأصوات: {count}'
+  poll_invalid_duration: المدة يجب أن تكون بين دقيقة واحدة وأسبوع واحد
+  poll_results: 📊 نتائج التصويت
+  poll_total_votes: 'إجمالي الأصوات: {count}'
+  remind_desc: تعيين تذكير
+  remind_invalid_duration: 'يرجى تحديد مدة صالحة (مثال: 1h, 30m, 2d)'
+  remind_notification_title: ⏰ تذكير
+  remind_success: 'سأقوم بتذكيرك خلال **{duration}**
+
+
+    الرسالة: {message}'
+  remind_success_title: تم تعيين التذكير
+  remind_too_long: الحد الأقصى لمدة التذكير هو سنة واحدة
+  roles: 🎭 الرتب
+  serverstats_desc: عرض إحصائيات السيرفر
+  serverstats_title: 📊 إحصائيات السيرفر - {name}
+  text_channels: 💬 القنوات النصية
+  top_role: أعلى رتبة
+  total_members: 👥 إجمالي الأعضاء
+  userinfo_desc: الحصول على معلومات المستخدم
+  userinfo_title: معلومات المستخدم - {name}
+  username: اسم المستخدم
+  voice_channels: 🔊 القنوات الصوتية
+verification:
+  prompt_desc: انقر على الزر أدناه للتحقق والحصول على الوصول إلى السيرفر.
+  prompt_footer: أكمل التحقق لفتح جميع القنوات
+  prompt_title: 🔐 التحقق مطلوب
+  verify_button: تحقق

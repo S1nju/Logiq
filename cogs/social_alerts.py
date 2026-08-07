@@ -8,6 +8,7 @@ from discord import app_commands
 from discord.ext import commands, tasks
 from typing import Optional
 import logging
+from utils.i18n import t
 import asyncio
 import aiohttp
 

@@ -9,6 +9,7 @@ from discord.ext import commands
 from datetime import datetime, timedelta
 from typing import Optional
 import logging
+from utils.i18n import t
 import asyncio
 
 from utils.embeds import EmbedFactory, EmbedColor

@@ -8,6 +8,7 @@ from discord import app_commands
 from discord.ext import commands
 from typing import Optional
 import logging
+from utils.i18n import t
 
 from utils.embeds import EmbedFactory, EmbedColor
 from utils.permissions import is_admin

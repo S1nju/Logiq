@@ -9,6 +9,7 @@ from discord.ext import commands
 from datetime import datetime
 from typing import Optional
 import logging
+from utils.i18n import t
 from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont
 

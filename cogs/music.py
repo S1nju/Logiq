@@ -8,6 +8,7 @@ from discord import app_commands
 from discord.ext import commands
 from typing import Optional
 import logging
+from utils.i18n import t
 import asyncio
 
 from utils.embeds import EmbedFactory, EmbedColor
@@ -57,6 +58,14 @@ class MusicControlView(discord.ui.View):
     def __init__(self, cog: 'Music'):
         super().__init__(timeout=None)
         self.cog = cog
+        for item in self.children:
+            if isinstance(item, discord.ui.Button):
+                if item.custom_id == "music_pause":
+                    item.label = t("music.pause", default="⏸️ Pause")
+                elif item.custom_id == "music_skip":
+                    item.label = t("music.skip", default="⏭️ Skip")
+                elif item.custom_id == "music_stop":
+                    item.label = t("music.stop", default="⏹️ Stop")
         
     @discord.ui.button(label="⏸️ Pause", style=discord.ButtonStyle.primary, custom_id="music_pause")
     async def pause_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -71,7 +80,7 @@ class MusicControlView(discord.ui.View):
         vc = interaction.guild.voice_client
         if vc.is_playing():
             vc.pause()
-            button.label = "▶️ Resume"
+            button.label = t("music.resume", default="▶️ Resume")
             await interaction.response.edit_message(view=self)
             await interaction.followup.send(
                 embed=EmbedFactory.info("Paused", "Music paused"),
@@ -79,7 +88,7 @@ class MusicControlView(discord.ui.View):
             )
         elif vc.is_paused():
             vc.resume()
-            button.label = "⏸️ Pause"
+            button.label = t("music.pause", default="⏸️ Pause")
             await interaction.response.edit_message(view=self)
             await interaction.followup.send(
                 embed=EmbedFactory.info("Resumed", "Music resumed"),
