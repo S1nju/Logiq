@@ -3,11 +3,7 @@ motor==3.3.2
 pymongo==4.6.1
 aiohttp>=3.9.1
 PyYAML==6.0.1
-<<<<<<< HEAD
-pillow>=10.4.0
-=======
 pillow>=10.2.0
->>>>>>> d201cb62703399ace4be0cbb6a697659bb6281af
 fastapi==0.109.0
 uvicorn==0.27.0
 pytest==7.4.4
