@@ -252,9 +252,11 @@ class Music(commands.Cog):
     @app_commands.describe(query="Song name or YouTube URL")
     async def play(self, interaction: discord.Interaction, query: str):
         """Play music from YouTube"""
+        await interaction.response.defer()
+        
         # Check if user is in voice channel
         if not interaction.user.voice:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 embed=EmbedFactory.error("Not in Voice", "You must be in a voice channel to use this command"),
                 ephemeral=True
             )
