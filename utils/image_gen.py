@@ -26,7 +26,7 @@ def create_leaderboard_image(users_data: list, server_name: str) -> BytesIO:
     TEXT_COLOR = (255, 255, 255)
     PANEL_HEIGHT = 85
     PANEL_SPACING = 10
-    PANEL_WIDTH = 550
+    PANEL_WIDTH = 750
     PADDING = 30
     
     total_panels = len(users_data)
