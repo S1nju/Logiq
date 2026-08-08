@@ -36,6 +36,60 @@ MEN_SLAP_GIFS = [
     "assets/gifs/rpafuilN.gif"
 ]
 
+class ActionBackView(discord.ui.View):
+    def __init__(self, action: str, author: discord.Member, target: discord.Member, label: str, back_desc_func):
+        super().__init__(timeout=10.0)
+        self.action = action
+        self.author = author
+        self.target = target
+        self.message = None
+        self.back_desc_func = back_desc_func
+        
+        btn_style = discord.ButtonStyle.danger if action == "slap" else discord.ButtonStyle.primary
+        self.action_btn = discord.ui.Button(label=label, style=btn_style)
+        self.action_btn.callback = self.button_callback
+        self.add_item(self.action_btn)
+
+    async def button_callback(self, interaction: discord.Interaction):
+        if interaction.user != self.target:
+            return await interaction.response.send_message("This button is not for you!", ephemeral=True)
+            
+        GIF_MAP = {
+            "hug": (MEN_HUG_GIFS, "hug.gif"),
+            "cuddle": (MEN_CUDDLE_GIFS, "cuddle.gif"),
+            "slap": (MEN_SLAP_GIFS, "slap.gif")
+        }
+        
+        gif_list, filename = GIF_MAP[self.action]
+        gif_path = random.choice(gif_list)
+        file = discord.File(gif_path, filename=filename)
+        
+        desc = self.back_desc_func(self.target, self.author)
+        embed = discord.Embed(description=desc, color=EmbedColor.PRIMARY)
+        embed.set_image(url=f"attachment://{filename}")
+        
+        for child in self.children:
+            child.disabled = True
+            
+        try:
+            if self.message:
+                await self.message.edit(view=self)
+            else:
+                await interaction.message.edit(view=self)
+        except discord.HTTPException:
+            pass
+            
+        await interaction.response.send_message(file=file, embed=embed)
+
+    async def on_timeout(self):
+        for child in self.children:
+            child.disabled = True
+        try:
+            if self.message:
+                await self.message.edit(view=self)
+        except Exception:
+            pass
+
 class Fun(commands.Cog):
     """Fun Roleplay Commands"""
 
@@ -58,7 +112,11 @@ class Fun(commands.Cog):
             color=EmbedColor.PRIMARY
         )
         embed.set_image(url="attachment://hug.gif")
-        await interaction.response.send_message(file=file, embed=embed)
+        
+        def get_desc(t, a): return f"**{t.display_name}** hugs **{a.display_name}** back! 🫂"
+        view = ActionBackView("hug", interaction.user, member, "Hug Back 🫂", get_desc)
+        await interaction.response.send_message(file=file, embed=embed, view=view)
+        view.message = await interaction.original_response()
 
     @app_commands.command(name="cuddle", description="Cuddle up with someone!")
     @app_commands.describe(member="The person you want to cuddle")
@@ -74,7 +132,11 @@ class Fun(commands.Cog):
             color=EmbedColor.PRIMARY
         )
         embed.set_image(url="attachment://cuddle.gif")
-        await interaction.response.send_message(file=file, embed=embed)
+        
+        def get_desc(t, a): return f"**{t.display_name}** cuddles **{a.display_name}** back! 🥰"
+        view = ActionBackView("cuddle", interaction.user, member, "Cuddle Back 🥰", get_desc)
+        await interaction.response.send_message(file=file, embed=embed, view=view)
+        view.message = await interaction.original_response()
 
     @app_commands.command(name="slap", description="Slap someone across the face!")
     @app_commands.describe(member="The person you want to slap")
@@ -90,7 +152,11 @@ class Fun(commands.Cog):
             color=EmbedColor.PRIMARY
         )
         embed.set_image(url="attachment://slap.gif")
-        await interaction.response.send_message(file=file, embed=embed)
+        
+        def get_desc(t, a): return f"**{t.display_name}** slaps **{a.display_name}** back! 😠"
+        view = ActionBackView("slap", interaction.user, member, "Slap Back 😠", get_desc)
+        await interaction.response.send_message(file=file, embed=embed, view=view)
+        view.message = await interaction.original_response()
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -124,20 +190,27 @@ class Fun(commands.Cog):
                 file = discord.File(gif_path, filename="hug.gif")
                 desc = f"**{message.author.display_name}** يعانق **{member.display_name}**! 🫂"
                 attachment_name = "hug.gif"
+                btn_label = "عناق متبادل 🫂"
+                def get_desc(t, a): return f"**{t.display_name}** يبادلك العناق يا **{a.display_name}**! 🫂"
             elif action_type == "cuddle":
                 gif_path = random.choice(MEN_CUDDLE_GIFS)
                 file = discord.File(gif_path, filename="cuddle.gif")
                 desc = f"**{message.author.display_name}** يبوس **{member.display_name}**! 🥰"
                 attachment_name = "cuddle.gif"
+                btn_label = "بوسة متبادلة 🥰"
+                def get_desc(t, a): return f"**{t.display_name}** يبادلك البوسة يا **{a.display_name}**! 🥰"
             elif action_type == "slap":
                 gif_path = random.choice(MEN_SLAP_GIFS)
                 file = discord.File(gif_path, filename="slap.gif")
                 desc = f"**{message.author.display_name}** يعطي كف لـ **{member.display_name}**! 😠"
                 attachment_name = "slap.gif"
+                btn_label = "كف متبادل 😠"
+                def get_desc(t, a): return f"**{t.display_name}** يرد الكف لـ **{a.display_name}**! 😠"
                 
             embed = discord.Embed(description=desc, color=EmbedColor.PRIMARY)
             embed.set_image(url=f"attachment://{attachment_name}")
-            await message.channel.send(file=file, embed=embed)
+            view = ActionBackView(action_type, message.author, member, btn_label, get_desc)
+            view.message = await message.channel.send(file=file, embed=embed, view=view)
 
 async def setup(bot: commands.Bot):
     """Setup function for cog loading"""
