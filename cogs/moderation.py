@@ -55,39 +55,27 @@ class Moderation(commands.Cog):
                 has_admin = message.author.guild_permissions.administrator
                 
                 if can_moderate or has_admin:
-                    if cmd_prefix == aliases.get('ban_add', 'باند'):
-                        try:
+                    try:
+                        if cmd_prefix == aliases.get('ban_add', 'باند'):
                             await target_member.ban(reason=f"Action invoked by {message.author}")
                             await message.channel.send(f"تم اعطاء باند لـ {target_member.mention}")
-                        except discord.Forbidden:
-                            pass
-                            
-                    elif cmd_prefix == aliases.get('ban_remove', 'ازالة'):
-                        try:
+                                
+                        elif cmd_prefix == aliases.get('ban_remove', 'ازالة'):
                             banned_users = [entry async for entry in message.guild.bans()]
                             ban_entry = discord.utils.get(banned_users, user__id=target_member.id)
                             if ban_entry:
                                 await message.guild.unban(ban_entry.user)
                                 await message.channel.send(f"تم إزالة الباند عن {target_member.mention}")
-                        except discord.Forbidden:
-                            pass
-                            
-                    elif cmd_prefix == aliases.get('voice_mute', 'ميوت'):
-                        try:
+                                
+                        elif cmd_prefix == aliases.get('voice_mute', 'ميوت'):
                             await target_member.edit(mute=True, reason=f"Voice muted by {message.author}")
                             await message.channel.send(f"تم اعطاء ميوت صوتي لـ {target_member.mention}")
-                        except discord.Forbidden:
-                            pass
-                            
-                    elif cmd_prefix == aliases.get('voice_unmute', 'فك'):
-                        try:
+                                
+                        elif cmd_prefix == aliases.get('voice_unmute', 'فك'):
                             await target_member.edit(mute=False, reason=f"Voice unmuted by {message.author}")
                             await message.channel.send(f"تم فك الميوت الصوتي عن {target_member.mention}")
-                        except discord.Forbidden:
-                            pass
-                            
-                    elif cmd_prefix == aliases.get('chat_mute', 'اسكت'):
-                        try:
+                                
+                        elif cmd_prefix == aliases.get('chat_mute', 'اسكت'):
                             mute_role = discord.utils.get(message.guild.roles, name="Muted")
                             if not mute_role:
                                 mute_role = await message.guild.create_role(name="Muted")
@@ -95,35 +83,32 @@ class Moderation(commands.Cog):
                                     await ch.set_permissions(mute_role, send_messages=False)
                             await target_member.add_roles(mute_role, reason=f"Chat Mute by {message.author}")
                             await message.channel.send(f"تم اسكات {target_member.mention}")
-                        except discord.Forbidden:
-                            pass
-                            
-                    elif cmd_prefix == aliases.get('chat_unmute', 'تكلم'):
-                        try:
+                                
+                        elif cmd_prefix == aliases.get('chat_unmute', 'تكلم'):
                             mute_role = discord.utils.get(message.guild.roles, name="Muted")
                             if mute_role and mute_role in target_member.roles:
                                 await target_member.remove_roles(mute_role, reason=f"Chat Unmute by {message.author}")
                             await message.channel.send(f"تم فك الاسكات عن {target_member.mention}")
-                        except discord.Forbidden:
-                            pass
-                            
-                    elif cmd_prefix == aliases.get('media_block', 'صور'):
-                        try:
+                                
+                        elif cmd_prefix == aliases.get('media_block', 'صور'):
                             await message.channel.set_permissions(target_member, attach_files=False, embed_links=False)
                             await message.channel.send(f"تم منع {target_member.mention} من إرسال الصور")
-                        except discord.Forbidden:
-                            pass
-                            
-                    elif cmd_prefix == aliases.get('live_block', 'لايف'):
-                        try:
+                                
+                        elif cmd_prefix == aliases.get('live_block', 'لايف'):
                             curr_voice = target_member.voice.channel if target_member.voice else None
                             if curr_voice:
                                 await curr_voice.set_permissions(target_member, stream=False)
                                 await message.channel.send(f"تم منع {target_member.mention} من البث المباشر (اللايف) في الروم الصوتي")
                             else:
                                 await message.channel.send(f"يجب أن يكون {target_member.mention} في روم صوتي")
-                        except discord.Forbidden:
-                            pass
+                    except discord.Forbidden:
+                        await message.channel.send("❌ عذراً، لا أملك صلاحية كافية لتنفيذ هذا الإجراء على هذا العضو. تأكد من أن رتبتي أعلى من رتبته!")
+                else:
+                    # Provide feedback if they lack permissions but successfully matched an alias
+                    valid_aliases = list(aliases.values()) if aliases else []
+                    default_aliases = ['باند', 'ازالة', 'ميوت', 'فك', 'اسكت', 'تكلم', 'صور', 'لايف']
+                    if cmd_prefix in valid_aliases or cmd_prefix in default_aliases:
+                        await message.channel.send("❌ عذراً، ليس لديك الصلاحيات الكافية لتنفيذ هذا الأمر.")
 
         # Check spam
         if self.module_config.get('auto_mod', {}).get('spam_detection', True):
