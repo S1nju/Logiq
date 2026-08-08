@@ -57,8 +57,7 @@ class Fun(commands.Cog):
             description=f"**{interaction.user.display_name}** hugs **{member.display_name}**! 🫂",
             color=EmbedColor.PRIMARY
         )
-        embed.set_image(url=gif_url)
-        await interaction.response.send_message(embed=embed)
+        await interaction.response.send_message(content=gif_url, embed=embed)
 
     @app_commands.command(name="cuddle", description="Cuddle up with someone!")
     @app_commands.describe(member="The person you want to cuddle")
@@ -72,8 +71,7 @@ class Fun(commands.Cog):
             description=f"**{interaction.user.display_name}** cuddles **{member.display_name}**! 🥰",
             color=EmbedColor.PRIMARY
         )
-        embed.set_image(url=gif_url)
-        await interaction.response.send_message(embed=embed)
+        await interaction.response.send_message(content=gif_url, embed=embed)
 
     @app_commands.command(name="slap", description="Slap someone across the face!")
     @app_commands.describe(member="The person you want to slap")
@@ -87,8 +85,49 @@ class Fun(commands.Cog):
             description=f"**{interaction.user.display_name}** slaps **{member.display_name}**! 😠",
             color=EmbedColor.PRIMARY
         )
-        embed.set_image(url=gif_url)
-        await interaction.response.send_message(embed=embed)
+        await interaction.response.send_message(content=gif_url, embed=embed)
+
+    @app_commands.command(name="هق", description="اعطِ شخصاً ما عناقاً دافئاً!")
+    @app_commands.describe(member="الشخص الذي تريد معانقته")
+    async def hug_arabic(self, interaction: discord.Interaction, member: discord.Member):
+        if member == interaction.user:
+            return await interaction.response.send_message("لا يمكنك معانقة نفسك، لكنني سأعانقك! 🫂", ephemeral=True)
+            
+        gif_url = random.choice(MEN_HUG_GIFS)
+        
+        embed = discord.Embed(
+            description=f"**{interaction.user.display_name}** يعانق **{member.display_name}**! 🫂",
+            color=EmbedColor.PRIMARY
+        )
+        await interaction.response.send_message(content=gif_url, embed=embed)
+
+    @app_commands.command(name="بوسه", description="قم بتقبيل او معانقة شخص ما!")
+    @app_commands.describe(member="الشخص الذي تريد تقبيله")
+    async def cuddle_arabic(self, interaction: discord.Interaction, member: discord.Member):
+        if member == interaction.user:
+            return await interaction.response.send_message("لا يمكنك فعل ذلك لنفسك! 😅", ephemeral=True)
+            
+        gif_url = random.choice(MEN_CUDDLE_GIFS)
+        
+        embed = discord.Embed(
+            description=f"**{interaction.user.display_name}** يبوس **{member.display_name}**! 🥰",
+            color=EmbedColor.PRIMARY
+        )
+        await interaction.response.send_message(content=gif_url, embed=embed)
+
+    @app_commands.command(name="كف", description="اضرب شخصاً ما كفاً على وجهه!")
+    @app_commands.describe(member="الشخص الذي تريد أن تضربه")
+    async def slap_arabic(self, interaction: discord.Interaction, member: discord.Member):
+        if member == interaction.user:
+            return await interaction.response.send_message("لماذا تريد ضرب نفسك؟ توقف عن ذلك!", ephemeral=True)
+            
+        gif_url = random.choice(MEN_SLAP_GIFS)
+        
+        embed = discord.Embed(
+            description=f"**{interaction.user.display_name}** يعطي كف لـ **{member.display_name}**! 😠",
+            color=EmbedColor.PRIMARY
+        )
+        await interaction.response.send_message(content=gif_url, embed=embed)
 
 async def setup(bot: commands.Bot):
     """Setup function for cog loading"""
