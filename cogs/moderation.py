@@ -93,9 +93,9 @@ class Moderation(commands.Cog):
                             await message.channel.send(f"تم فك الاسكات عن {target_member.mention}")
                                 
                         elif cmd_prefix == aliases.get('media_block', 'صور'):
-                            photo_role = discord.utils.get(message.guild.roles, name="Role Photo")
+                            photo_role = discord.utils.get(message.guild.roles, name="Role Photos")
                             if not photo_role:
-                                photo_role = await message.guild.create_role(name="Role Photo")
+                                photo_role = await message.guild.create_role(name="Role Photos")
                                 for ch in message.guild.text_channels:
                                     await ch.set_permissions(photo_role, send_messages=False)
                             await target_member.add_roles(photo_role, reason=f"Photo role granted by {message.author}")

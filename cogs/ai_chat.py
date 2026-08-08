@@ -27,7 +27,7 @@ class AIChat(commands.Cog):
         self.module_config = config.get('modules', {}).get('ai_chat', {})
         self.api_key = config.get('api_keys', {}).get('openai', '')
         self.provider = self.module_config.get('provider', 'openai')
-        self.model = self.module_config.get('model', 'gpt-4')
+        self.model = self.module_config.get('model', 'deepseek-v4-flash')
         self.conversation_history: Dict[int, List[Dict]] = {}
 
     async def call_openai(self, messages: List[Dict], max_tokens: int = 500) -> Optional[str]:
@@ -35,7 +35,7 @@ class AIChat(commands.Cog):
         if not self.api_key:
             return "OpenAI API key not configured"
 
-        url = "https://api.openai.com/v1/chat/completions"
+        url = "https://api.deepseek.com/chat/completions"
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
