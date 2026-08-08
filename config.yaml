@@ -24,11 +24,11 @@ logging:
   level: INFO
 modules:
   ai_chat:
-    api_key: ''
-    enabled: false
+    api_key: ${DEEPSEEK_API_KEY}
+    enabled: true
     max_tokens: 500
-    model: gpt-4
-    provider: openai
+    model: deepseek-v4-flash
+    provider: deepseek
     temperature: 0.7
   analytics:
     enabled: true
