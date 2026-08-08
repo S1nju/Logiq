@@ -56,7 +56,7 @@ def create_leaderboard_image(users_data: list, server_name: str) -> BytesIO:
     draw.rounded_rectangle([(title_x, title_y), (title_x + title_w, title_y + title_h)], radius=15, fill=(38, 59, 56))
 
     # Draw Title text (توب النقاط)
-    title = get_arabic_text("\u062a\u0648\u0628 \u0627\u0644\u0646\u0642\u0627\u0637")
+    title = "Top Points"
     draw.text((title_x + title_w - 20, title_y + 12), title, font=font_regular, fill=TEXT_COLOR, anchor="ra")
 
     y_offset = PADDING + title_h + 20
@@ -109,11 +109,11 @@ def create_leaderboard_image(users_data: list, server_name: str) -> BytesIO:
         draw.text((avatar_x + avatar_size + 15, y_offset + 15), rank_str, font=font_small, fill=(210, 210, 210))
         
         # Username
-        name_str = get_arabic_text(str(data.get('name', 'Unknown')))
+        name_str = str(data.get('name', 'Unknown'))
         draw.text((avatar_x + avatar_size + 15, y_offset + 42), name_str, font=font_regular, fill=TEXT_COLOR)
         
         # Points (arabic right aligned)
-        points_str = get_arabic_text(f"{data.get('points', 0)} \u0646\u0642\u0637\u0629")
+        points_str = f"{data.get('points', 0)} Points"
         draw.text((PADDING + PANEL_WIDTH - 20, y_offset + 30), points_str, font=font_regular, fill=TEXT_COLOR, anchor="ra")
 
         y_offset += PANEL_HEIGHT + PANEL_SPACING
@@ -172,13 +172,13 @@ def create_rank_card(user_name: str, avatar_bytes: bytes, points: int, rank: int
             draw.ellipse((avatar_x, avatar_y, avatar_x+avatar_size, avatar_y+avatar_size), fill=(100,100,100))
             
     # Username and Level
-    name = get_arabic_text(str(user_name))
+    name = str(user_name)
     draw.text((avatar_x + avatar_size + 20, avatar_y + 10), name, font=font_large, fill=TEXT_COLOR)
     rank_str = f"#{rank} | Level {level}"
     draw.text((avatar_x + avatar_size + 20, avatar_y + 55), rank_str, font=font_small, fill=(200, 200, 200))
     
-    # Points (arabic)
-    points_str = get_arabic_text(f"{points} \u0646\u0642\u0637\u0629")
+    # Points
+    points_str = f"{points} Points"
     draw.text((560, avatar_y + 35), points_str, font=font_large, fill=TEXT_COLOR, anchor="ra")
 
     buffer = BytesIO()
