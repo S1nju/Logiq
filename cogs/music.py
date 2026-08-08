@@ -3,6 +3,7 @@ Music Cog for Logiq
 Music player powered by Wavelink (Lavalink)
 """
 
+import asyncio
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -155,11 +156,34 @@ class Music(commands.Cog):
                 return
 
         try:
+            is_playlist = False
+            playlist_name = ""
+            
             # Bypass youtube blocks by enforcing SoundCloud for raw text searches
             if query.startswith('http://') or query.startswith('https://'):
-                tracks: wavelink.Search = await wavelink.Playable.search(query)
+                tracks = await wavelink.Playable.search(query)
+                
+                # Manual Spotify -> SoundCloud integration
+                if tracks and "spotify.com" in query:
+                    is_playlist = isinstance(tracks, wavelink.Playlist)
+                    playlist_name = tracks.name if is_playlist else ""
+                    raw_tracks = tracks.tracks[:20] if is_playlist else [tracks[0]]
+                    
+                    translated = []
+                    for t in raw_tracks:
+                        sc_q = await wavelink.Playable.search(f"{t.title} {t.author}", source=wavelink.TrackSource.SoundCloud)
+                        if sc_q:
+                            translated.append(sc_q[0])
+                            
+                    if not translated:
+                        await interaction.followup.send(
+                            embed=EmbedFactory.error("Translation Failed", "Could not find these Spotify tracks on SoundCloud."),
+                            ephemeral=True
+                        )
+                        return
+                    tracks = translated
             else:
-                tracks: wavelink.Search = await wavelink.Playable.search(query, source=wavelink.TrackSource.SoundCloud)
+                tracks = await wavelink.Playable.search(query, source=wavelink.TrackSource.SoundCloud)
                 
             if not tracks:
                 await interaction.followup.send(
@@ -169,13 +193,16 @@ class Music(commands.Cog):
                 return
 
             # If it's a playlist, add all tracks
-            if isinstance(tracks, wavelink.Playlist):
-                added = len(tracks.tracks)
-                for track in tracks.tracks:
+            if is_playlist or isinstance(tracks, wavelink.Playlist):
+                track_list = tracks.tracks if isinstance(tracks, wavelink.Playlist) else tracks
+                added = len(track_list)
+                for track in track_list:
                     player.queue.put(track)
+                    
+                final_name = tracks.name if isinstance(tracks, wavelink.Playlist) else playlist_name
                 embed = EmbedFactory.success(
                     "Playlist Added",
-                    f"**Added {added} tracks from:** {tracks.name}\n"
+                    f"**Added {added} tracks from:** {final_name}\n"
                     f"**Requested by:** {interaction.user.mention}"
                 )
             else:
