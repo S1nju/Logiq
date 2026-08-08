@@ -140,6 +140,7 @@ class Welcome(commands.Cog):
         img_url = welcome_config.get('image_url', '')
 
         embed = EmbedFactory.create(title=title, description=desc, color=EmbedColor.PRIMARY)
+        follow_up_embed = EmbedFactory.create(title="", description="", color=EmbedColor.PRIMARY, image="https://cdn.discordapp.com/attachments/1532825623435804692/1535620592680570930/LINE.gif?ex=6a786d9f&is=6a771c1f&hm=10f9a21b6fd1480a0f7b26009cc7409f28a11c48b8868e929b0421271efc89db&")
         
         if img_url and img_url.startswith('http'):
             try:
@@ -151,6 +152,7 @@ class Welcome(commands.Cog):
         try:
             if msg_content or desc or title or img_url:
                 await channel.send(content=msg_content if msg_content else None, embed=embed if (title or desc or img_url) else None)
+                await channel.send(embed=follow_up_embed)
             logger.info(f"Sent rich welcome message for {member} in {channel}")
         except discord.Forbidden:
             logger.warning(f"No permission to send welcome in {channel}")
