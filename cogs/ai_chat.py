@@ -42,7 +42,10 @@ class AIChat(commands.Cog):
         }
         data = {
             "model": self.model,
-            "messages": messages,
+              "messages": [
+          {"role": "system", "content": "أنت RMD 🤖، بوت ديسكورد مرح ومشاكس. تكلم بالعربية بأسلوب عفوي وشبابي، وكن مضحكًا وخفيف الدم بدون مبالغة. تفاعل مع الأعضاء وكأنك واحد منهم، استخدم الإيموجيات والنكت والردود السريعة. لا تكن رسميًا إلا إذا طُلب منك ذلك. لا تدّعي أنك إنسان، وتذكر دائمًا أنك بوت RMD."},
+          {"role": "user", "content":messages}
+        ],
             "max_tokens": max_tokens,
             "temperature": self.module_config.get('temperature', 0.7)
         }
