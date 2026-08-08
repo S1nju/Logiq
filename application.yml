@@ -28,15 +28,15 @@ plugins:
     allowSearch: true
     allowDirectVideoIds: true
     allowDirectPlaylistIds: true
-    # Spoof mobile and TV clients to bypass YouTube VPS cipher blocking!
+    # Strictly disable WEB clients so it NEVER attempts to parse broken JavaScript
     clients:
       - ANDROID_VR
+      - TVHTML5EMBEDDED
       - MUSIC
-      - WEB
 
   lavasrc:
     providers:
-      - "ytsearch:\"%ISRC%\"" # Search using standard ISRC from Spotify first
+      - "scsearch:\"%ISRC%\"" # Search using standard ISRC from Spotify first
       - "scsearch:%QUERY%"    # Fallback to SoundCloud if YouTube is blocked
       - "ytsearch:%QUERY%"
     sources:
