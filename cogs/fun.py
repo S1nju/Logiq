@@ -15,11 +15,10 @@ logger = logging.getLogger(__name__)
 
 # Hardcoded GIF lists to guarantee ONLY men are featured
 MEN_HUG_GIFS = [
-    "https://klipy.com/gifs/bro-hug-bromance-love-1",
-    "https://klipy.com/gifs/joey-friends-14",
-    "https://klipy.com/gifs/guys-hugging-2",
-    "https://klipy.com/gifs/robertmanion-ajholmes",
-    "https://klipy.com/gifs/hugging-kiss-1"
+    "assets/gifs/Nsd8B44i.gif",
+    "assets/gifs/nQTI90lm.gif",
+    "assets/gifs/ortTfVI6.gif",
+
 ]
 
 MEN_CUDDLE_GIFS = [
@@ -51,13 +50,15 @@ class Fun(commands.Cog):
         if member == interaction.user:
             return await interaction.response.send_message("You can't hug yourself, but I'll hug you! 🫂", ephemeral=True)
             
-        gif_url = random.choice(MEN_HUG_GIFS)
+        gif_path = random.choice(MEN_HUG_GIFS)
+        file = discord.File(gif_path, filename="hug.gif")
         
         embed = discord.Embed(
             description=f"**{interaction.user.display_name}** hugs **{member.display_name}**! 🫂",
             color=EmbedColor.PRIMARY
         )
-        await interaction.response.send_message(content=gif_url, embed=embed)
+        embed.set_image(url="attachment://hug.gif")
+        await interaction.response.send_message(file=file, embed=embed)
 
     @app_commands.command(name="cuddle", description="Cuddle up with someone!")
     @app_commands.describe(member="The person you want to cuddle")
@@ -65,13 +66,15 @@ class Fun(commands.Cog):
         if member == interaction.user:
             return await interaction.response.send_message("You can't really cuddle yourself like that! 😅", ephemeral=True)
             
-        gif_url = random.choice(MEN_CUDDLE_GIFS)
+        gif_path = random.choice(MEN_CUDDLE_GIFS)
+        file = discord.File(gif_path, filename="cuddle.gif")
         
         embed = discord.Embed(
             description=f"**{interaction.user.display_name}** cuddles **{member.display_name}**! 🥰",
             color=EmbedColor.PRIMARY
         )
-        await interaction.response.send_message(content=gif_url, embed=embed)
+        embed.set_image(url="attachment://cuddle.gif")
+        await interaction.response.send_message(file=file, embed=embed)
 
     @app_commands.command(name="slap", description="Slap someone across the face!")
     @app_commands.describe(member="The person you want to slap")
@@ -116,24 +119,25 @@ class Fun(commands.Cog):
                     await message.channel.send("لماذا تريد ضرب نفسك؟ توقف عن ذلك!")
                 return
                 
-            file = None
             if action_type == "hug":
-                gif_url = random.choice(MEN_HUG_GIFS)
+                gif_path = random.choice(MEN_HUG_GIFS)
+                file = discord.File(gif_path, filename="hug.gif")
                 desc = f"**{message.author.display_name}** يعانق **{member.display_name}**! 🫂"
+                attachment_name = "hug.gif"
             elif action_type == "cuddle":
-                gif_url = random.choice(MEN_CUDDLE_GIFS)
+                gif_path = random.choice(MEN_CUDDLE_GIFS)
+                file = discord.File(gif_path, filename="cuddle.gif")
                 desc = f"**{message.author.display_name}** يبوس **{member.display_name}**! 🥰"
+                attachment_name = "cuddle.gif"
             elif action_type == "slap":
                 gif_path = random.choice(MEN_SLAP_GIFS)
                 file = discord.File(gif_path, filename="slap.gif")
                 desc = f"**{message.author.display_name}** يعطي كف لـ **{member.display_name}**! 😠"
+                attachment_name = "slap.gif"
                 
             embed = discord.Embed(description=desc, color=EmbedColor.PRIMARY)
-            if file:
-                embed.set_image(url="attachment://slap.gif")
-                await message.channel.send(file=file, embed=embed)
-            else:
-                await message.channel.send(content=gif_url, embed=embed)
+            embed.set_image(url=f"attachment://{attachment_name}")
+            await message.channel.send(file=file, embed=embed)
 
 async def setup(bot: commands.Bot):
     """Setup function for cog loading"""
