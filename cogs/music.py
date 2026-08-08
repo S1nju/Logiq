@@ -155,8 +155,12 @@ class Music(commands.Cog):
                 return
 
         try:
-            # Wavelink handles YouTube, Spotify, Soundcloud automatically
-            tracks: wavelink.Search = await wavelink.Playable.search(query)
+            # Bypass youtube blocks by enforcing SoundCloud for raw text searches
+            if query.startswith('http://') or query.startswith('https://'):
+                tracks: wavelink.Search = await wavelink.Playable.search(query)
+            else:
+                tracks: wavelink.Search = await wavelink.Playable.search(query, source=wavelink.TrackSource.SoundCloud)
+                
             if not tracks:
                 await interaction.followup.send(
                     embed=EmbedFactory.error("Not Found", "No songs were found matching your query."),
