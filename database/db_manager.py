@@ -116,6 +116,8 @@ class DatabaseManager:
             "log_channel": None,
             "welcome_channel": None,
             "verified_role": None,
+            "autorole": None,
+            "aliases": {},
             "created_at": asyncio.get_event_loop().time()
         }
         if data:

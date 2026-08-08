@@ -33,21 +33,19 @@ plugins:
       - ANDROID_VR
       - TVHTML5EMBEDDED
       - MUSIC
-    oauth:
-      enabled: true
 
   lavasrc:
     providers:
-      - "ytsearch:\"%ISRC%\"" # Search using standard ISRC from Spotify first
-      - "ytsearch:%QUERY%"    # Fallback to YouTube
+      - "scsearch:\"%ISRC%\"" # Search using standard ISRC from Spotify first
+      - "scsearch:%QUERY%"    # Fallback to SoundCloud
     sources:
       spotify: true    # Enable Spotify support
       applemusic: true # Enable Apple Music support
       deezer: true     # Enable Deezer support
       yandexmusic: true
     spotify:
-      clientId: "your_spotify_client_id_here" # (Optional) Fill these out if you get rate limited by Spotify
-      clientSecret: "your_spotify_client_secret_here"
+      clientId: "" 
+      clientSecret: ""
 
 metrics:
   prometheus:
