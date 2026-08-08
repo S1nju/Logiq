@@ -159,32 +159,32 @@ class Music(commands.Cog):
             is_playlist = False
             playlist_name = ""
             
-            # Force everything (YouTube, Spotify, text) to play from SoundCloud
+            # Force everything (YouTube, Spotify, text) to play from SoundCloud directly
             if query.startswith('http://') or query.startswith('https://'):
-                # Grab the metadata from the original link (works even if IP is blocked from streaming)
-                tracks = await wavelink.Playable.search(query)
+                import aiohttp
+                import re
                 
-                if tracks:
-                    is_playlist = isinstance(tracks, wavelink.Playlist)
-                    playlist_name = tracks.name if is_playlist else ""
-                    
-                    # Prevent massive discord timeouts by limiting playlist translations
-                    raw_tracks = tracks.tracks[:20] if is_playlist else [tracks[0]]
-                    
-                    translated = []
-                    for t in raw_tracks:
-                        # Translate EVERY track to a SoundCloud search natively
-                        sc_q = await wavelink.Playable.search(f"{t.title} {t.author}", source=wavelink.TrackSource.SoundCloud)
-                        if sc_q:
-                            translated.append(sc_q[0])
-                            
-                    if not translated:
-                        await interaction.followup.send(
-                            embed=EmbedFactory.error("Translation Failed", "Could not find these tracks on SoundCloud (they might be blocked/missing)."),
-                            ephemeral=True
-                        )
-                        return
-                    tracks = translated
+                extracted_title = query
+                # Manually extract the page <title> to completely bypass Lavalink's IP blocks
+                try:
+                    async with aiohttp.ClientSession() as session:
+                        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+                        async with session.get(query, headers=headers, timeout=5) as resp:
+                            if resp.status == 200:
+                                text = await resp.text()
+                                match = re.search(r'<title>(.*?)</title>', text, re.IGNORECASE)
+                                if match:
+                                    t = match.group(1)
+                                    t = t.replace('| Spotify', '').replace('- song and lyrics by', '')
+                                    t = t.replace('- Single by', '').replace('- YouTube', '')
+                                    t = t.replace('&amp;', '&').strip()
+                                    if t:
+                                        extracted_title = t
+                except Exception:
+                    pass
+                
+                # Exclusively Search SoundCloud for the manually grabbed metadata string
+                tracks = await wavelink.Playable.search(extracted_title, source=wavelink.TrackSource.SoundCloud)
             else:
                 # Map raw text queries to SoundCloud
                 tracks = await wavelink.Playable.search(query, source=wavelink.TrackSource.SoundCloud)
