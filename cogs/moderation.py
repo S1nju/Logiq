@@ -87,8 +87,11 @@ class Moderation(commands.Cog):
                                 
                         elif cmd_prefix == aliases.get('chat_unmute', 'تكلم'):
                             mute_role = discord.utils.get(message.guild.roles, name="Muted")
+                            rmd_role = discord.utils.get(message.guild.roles, name="RMD")
                             if mute_role and mute_role in target_member.roles:
-                                await target_member.edit(roles=['RMD'] , reason=f"Chat Unmute by {message.author}")
+                                await target_member.remove_roles(mute_role , reason=f"Chat Unmute by {message.author}")
+                            if rmd_role and rmd_role not in target_member.roles:
+                                await target_member.add_roles(rmd_role , reason=f"Chat Unmute by {message.author}")
                                 
                             await message.channel.send(f"تم فك الاسكات عن {target_member.mention}")
                                 

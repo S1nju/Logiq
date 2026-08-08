@@ -69,7 +69,7 @@ class AIChat(commands.Cog):
         if not self.api_key:
             return {"flagged": False}
 
-        url = "https://api.openai.com/v1/moderations"
+        url = "https://api.deepseek.com/v1/moderations"
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
