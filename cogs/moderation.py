@@ -41,6 +41,90 @@ class Moderation(commands.Cog):
         if message.author.bot or not message.guild:
             return
 
+        # --- Arabic Moderation Text Parser ---
+        if message.content and message.mentions:
+            guild_data = await self.db.get_guild(message.guild.id)
+            if guild_data:
+                aliases = guild_data.get('aliases', {})
+                content_parts = message.content.strip().split()
+                cmd_prefix = content_parts[0]
+                target_member = message.mentions[0]
+                
+                # Check permissions physically
+                can_moderate, _ = PermissionChecker.can_moderate(message.author, target_member)
+                has_admin = message.author.guild_permissions.administrator
+                
+                if can_moderate or has_admin:
+                    if cmd_prefix == aliases.get('ban_add', 'باند'):
+                        try:
+                            await target_member.ban(reason=f"Action invoked by {message.author}")
+                            await message.channel.send(f"تم اعطاء باند لـ {target_member.mention}")
+                        except discord.Forbidden:
+                            pass
+                            
+                    elif cmd_prefix == aliases.get('ban_remove', 'ازالة'):
+                        try:
+                            banned_users = [entry async for entry in message.guild.bans()]
+                            ban_entry = discord.utils.get(banned_users, user__id=target_member.id)
+                            if ban_entry:
+                                await message.guild.unban(ban_entry.user)
+                                await message.channel.send(f"تم إزالة الباند عن {target_member.mention}")
+                        except discord.Forbidden:
+                            pass
+                            
+                    elif cmd_prefix == aliases.get('voice_mute', 'ميوت'):
+                        try:
+                            await target_member.edit(mute=True, reason=f"Voice muted by {message.author}")
+                            await message.channel.send(f"تم اعطاء ميوت صوتي لـ {target_member.mention}")
+                        except discord.Forbidden:
+                            pass
+                            
+                    elif cmd_prefix == aliases.get('voice_unmute', 'فك'):
+                        try:
+                            await target_member.edit(mute=False, reason=f"Voice unmuted by {message.author}")
+                            await message.channel.send(f"تم فك الميوت الصوتي عن {target_member.mention}")
+                        except discord.Forbidden:
+                            pass
+                            
+                    elif cmd_prefix == aliases.get('chat_mute', 'اسكت'):
+                        try:
+                            mute_role = discord.utils.get(message.guild.roles, name="Muted")
+                            if not mute_role:
+                                mute_role = await message.guild.create_role(name="Muted")
+                                for ch in message.guild.text_channels:
+                                    await ch.set_permissions(mute_role, send_messages=False)
+                            await target_member.add_roles(mute_role, reason=f"Chat Mute by {message.author}")
+                            await message.channel.send(f"تم اسكات {target_member.mention}")
+                        except discord.Forbidden:
+                            pass
+                            
+                    elif cmd_prefix == aliases.get('chat_unmute', 'تكلم'):
+                        try:
+                            mute_role = discord.utils.get(message.guild.roles, name="Muted")
+                            if mute_role and mute_role in target_member.roles:
+                                await target_member.remove_roles(mute_role, reason=f"Chat Unmute by {message.author}")
+                            await message.channel.send(f"تم فك الاسكات عن {target_member.mention}")
+                        except discord.Forbidden:
+                            pass
+                            
+                    elif cmd_prefix == aliases.get('media_block', 'صور'):
+                        try:
+                            await message.channel.set_permissions(target_member, attach_files=False, embed_links=False)
+                            await message.channel.send(f"تم منع {target_member.mention} من إرسال الصور")
+                        except discord.Forbidden:
+                            pass
+                            
+                    elif cmd_prefix == aliases.get('live_block', 'لايف'):
+                        try:
+                            curr_voice = target_member.voice.channel if target_member.voice else None
+                            if curr_voice:
+                                await curr_voice.set_permissions(target_member, stream=False)
+                                await message.channel.send(f"تم منع {target_member.mention} من البث المباشر (اللايف) في الروم الصوتي")
+                            else:
+                                await message.channel.send(f"يجب أن يكون {target_member.mention} في روم صوتي")
+                        except discord.Forbidden:
+                            pass
+
         # Check spam
         if self.module_config.get('auto_mod', {}).get('spam_detection', True):
             await self._check_spam(message)
@@ -573,6 +657,112 @@ class Moderation(commands.Cog):
         except discord.Forbidden:
             await interaction.response.send_message(
                 embed=EmbedFactory.error("Error", "I don't have permission to change this user's nickname"),
+                ephemeral=True
+            )
+
+    @commands.Cog.listener()
+    async def on_member_join(self, member: discord.Member):
+        """AutoRole assignment on join"""
+        guild_data = await self.db.get_guild(member.guild.id)
+        if guild_data:
+            autorole_id = guild_data.get('autorole')
+            if autorole_id:
+                role = member.guild.get_role(autorole_id)
+                if role:
+                    try:
+                        await member.add_roles(role, reason="AutoRole Configuration")
+                    except discord.Forbidden:
+                        pass
+
+    @app_commands.command(name="set_alias", description="Configure custom Arabic prefix commands for actions")
+    @app_commands.describe(
+        action="The moderation action to rename (e.g. ban_add, voice_mute, chat_mute)",
+        alias="The new Arabic text prefix (e.g. طرد)"
+    )
+    @is_moderator()
+    async def set_alias(self, interaction: discord.Interaction, action: str, alias: str):
+        """Set a dynamic alias for prefix moderation"""
+        valid_actions = ['ban_add', 'ban_remove', 'voice_mute', 'voice_unmute', 'chat_mute', 'chat_unmute', 'media_block', 'live_block']
+        if action not in valid_actions:
+            await interaction.response.send_message(
+                embed=EmbedFactory.error("Invalid Action", f"Action must be one of: {', '.join(valid_actions)}"),
+                ephemeral=True
+            )
+            return
+            
+        guild_data = await self.db.get_guild(interaction.guild.id)
+        aliases = guild_data.get('aliases', {}) if guild_data else {}
+        aliases[action] = alias
+        
+        await self.db.update_guild(interaction.guild.id, {"aliases": aliases})
+        
+        embed = EmbedFactory.success("Alias Updated", f"Successfully mapped **{action}** to **{alias}**")
+        await interaction.response.send_message(embed=embed)
+
+    @app_commands.command(name="set_autorole", description="Configure the role automatically assigned to new members")
+    @app_commands.describe(role="The role to assign")
+    @is_moderator()
+    async def set_autorole(self, interaction: discord.Interaction, role: discord.Role):
+        """Set the autorole for the guild"""
+        await self.db.update_guild(interaction.guild.id, {"autorole": role.id})
+        embed = EmbedFactory.success("AutoRole Set", f"New members will now automatically receive the {role.mention} role.")
+        await interaction.response.send_message(embed=embed)
+
+    @app_commands.command(name="role", description="Assign or remove a specific role from a user")
+    @app_commands.describe(user="The user to modify", role="The role to assign/remove")
+    @is_moderator()
+    async def role_command(self, interaction: discord.Interaction, user: discord.Member, role: discord.Role):
+        """Toggle a role on a user"""
+        can_moderate, error = PermissionChecker.can_moderate(interaction.user, user)
+        if not can_moderate:
+            await interaction.response.send_message(
+                embed=EmbedFactory.error("Cannot modify roles", error),
+                ephemeral=True
+            )
+            return
+            
+        try:
+            if role in user.roles:
+                await user.remove_roles(role, reason=f"Role removed by {interaction.user}")
+                msg = f"Removed {role.mention} from {user.mention}"
+            else:
+                await user.add_roles(role, reason=f"Role added by {interaction.user}")
+                msg = f"Added {role.mention} to {user.mention}"
+                
+            embed = EmbedFactory.success("Role Update", msg)
+            await interaction.response.send_message(embed=embed)
+        except discord.Forbidden:
+            await interaction.response.send_message(
+                embed=EmbedFactory.error("Error", "I do not have permission to manage this role."),
+                ephemeral=True
+            )
+
+    @app_commands.command(name="mute", description="Mute a user via the Muted role natively")
+    @app_commands.describe(user="The user to mute")
+    @is_moderator()
+    async def mute(self, interaction: discord.Interaction, user: discord.Member):
+        """Mute a user"""
+        can_moderate, error = PermissionChecker.can_moderate(interaction.user, user)
+        if not can_moderate:
+            await interaction.response.send_message(
+                embed=EmbedFactory.error("Cannot Mute", error),
+                ephemeral=True
+            )
+            return
+
+        try:
+            mute_role = discord.utils.get(interaction.guild.roles, name="Muted")
+            if not mute_role:
+                mute_role = await interaction.guild.create_role(name="Muted")
+                for ch in interaction.guild.text_channels:
+                    await ch.set_permissions(mute_role, send_messages=False)
+            
+            await user.add_roles(mute_role, reason=f"Muted by {interaction.user}")
+            embed = EmbedFactory.success("Muted", f"{user.mention} has been muted.")
+            await interaction.response.send_message(embed=embed)
+        except discord.Forbidden:
+            await interaction.response.send_message(
+                embed=EmbedFactory.error("Error", "I do not have permission to configure mute roles."),
                 ephemeral=True
             )
 
