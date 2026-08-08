@@ -15,25 +15,26 @@ logger = logging.getLogger(__name__)
 
 # Hardcoded GIF lists to guarantee ONLY men are featured
 MEN_HUG_GIFS = [
-    "https://media.tenor.com/z4bYsm9-FQQAAAAC/anime-hug.gif",
-    "https://media.tenor.com/y_7gY8Kk70wAAAAC/free-mako.gif",
-    "https://media.tenor.com/V7B-x2v8hT8AAAAC/hug-anime.gif",
-    "https://media.tenor.com/Fq5B_q0NqTMAAAAC/anime-hug.gif",
-    "https://media.tenor.com/RMBjhwf1MtcAAAAC/anime-hug.gif"
+    "https://klipy.com/gifs/bro-hug-bromance-love-1",
+    "https://klipy.com/gifs/joey-friends-14",
+    "https://klipy.com/gifs/guys-hugging-2",
+    "https://klipy.com/gifs/robertmanion-ajholmes",
+    "https://klipy.com/gifs/hugging-kiss-1"
 ]
 
 MEN_CUDDLE_GIFS = [
-    "https://media.tenor.com/2cZBvtb7J3wAAAAC/anime-sleep.gif",
-    "https://media.tenor.com/PZ8rRkXpE2kAAAAC/sleep-anime.gif",
-    "https://media.tenor.com/zD11I_C0VjMAAAAC/anime-snuggle.gif",
-    "https://media.tenor.com/lOlsO4Qy_QYAAAAC/anime-cuddle.gif"
+    "https://klipy.com/gifs/anime-cuddle-43",
+    "https://klipy.com/gifs/shark-sharks-2",
+    "https://klipy.com/gifs/anime-cuddle-cuddle-anime",
+
 ]
 
 MEN_SLAP_GIFS = [
-    "https://media.tenor.com/WvM5aO4pPCEAAAAC/anime-slap.gif",
-    "https://media.tenor.com/E3OwKqIV72oAAAAC/anime-slap.gif",
-    "https://media.tenor.com/PeJyXelnMi0AAAAC/sao-sword-art-online.gif",
-    "https://media.tenor.com/D_iN7wQ4Q14AAAAC/mushoku-tensei-slap.gif"
+    "https://klipy.com/gifs/slap-michael-bryce",
+    "https://klipy.com/gifs/slap-slapping-231",
+    "https://klipy.com/gifs/slap-bet-slap",
+    "https://klipy.com/gifs/slap-face-slap-1",
+    "https://klipy.com/gifs/slap-face-slap-on-face"
 ]
 
 class Fun(commands.Cog):
