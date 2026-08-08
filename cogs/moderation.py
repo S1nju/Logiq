@@ -91,8 +91,13 @@ class Moderation(commands.Cog):
                             await message.channel.send(f"تم فك الاسكات عن {target_member.mention}")
                                 
                         elif cmd_prefix == aliases.get('media_block', 'صور'):
-                            await message.channel.set_permissions(target_member, attach_files=False, embed_links=False)
-                            await message.channel.send(f"تم منع {target_member.mention} من إرسال الصور")
+                            photo_role = discord.utils.get(message.guild.roles, name="Role Photo")
+                            if not photo_role:
+                                photo_role = await message.guild.create_role(name="Role Photo")
+                                for ch in message.guild.text_channels:
+                                    await ch.set_permissions(photo_role, send_messages=False)
+                            await target_member.add_roles(photo_role, reason=f"Photo role granted by {message.author}")
+                            await message.channel.send(f"تم منح {target_member.mention} رتبة الصورة")
                                 
                         elif cmd_prefix == aliases.get('live_block', 'لايف'):
                             curr_voice = target_member.voice.channel if target_member.voice else None
