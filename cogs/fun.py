@@ -23,18 +23,18 @@ MEN_HUG_GIFS = [
 ]
 
 MEN_CUDDLE_GIFS = [
-    "https://klipy.com/gifs/anime-cuddle-43",
-    "https://klipy.com/gifs/shark-sharks-2",
-    "https://klipy.com/gifs/anime-cuddle-cuddle-anime",
+    "assets/gifs/CFadSNIwNoleZ.gif",
+    "assets/gifs/4xANsChqMOdmv.gif",
+ 
 
 ]
 
 MEN_SLAP_GIFS = [
-    "https://klipy.com/gifs/slap-michael-bryce",
-    "https://klipy.com/gifs/slap-slapping-231",
-    "https://klipy.com/gifs/slap-bet-slap",
-    "https://klipy.com/gifs/slap-face-slap-1",
-    "https://klipy.com/gifs/slap-face-slap-on-face"
+    "assets/gifs/5eFdSOUN.gif",
+    "assets/gifs/Hdp9mqLE0Rstpi.gif",
+    "assets/gifs/J7dNlRIcUYdgq.gif",
+    "assets/gifs/T3Q5FcJ8QLClVE.gif",
+    "assets/gifs/rpafuilN.gif"
 ]
 
 class Fun(commands.Cog):
@@ -79,55 +79,61 @@ class Fun(commands.Cog):
         if member == interaction.user:
             return await interaction.response.send_message("Why would you want to slap yourself? Stop that!", ephemeral=True)
             
-        gif_url = random.choice(MEN_SLAP_GIFS)
+        gif_path = random.choice(MEN_SLAP_GIFS)
+        file = discord.File(gif_path, filename="slap.gif")
         
         embed = discord.Embed(
             description=f"**{interaction.user.display_name}** slaps **{member.display_name}**! 😠",
             color=EmbedColor.PRIMARY
         )
-        await interaction.response.send_message(content=gif_url, embed=embed)
+        embed.set_image(url="attachment://slap.gif")
+        await interaction.response.send_message(file=file, embed=embed)
 
-    @app_commands.command(name="هق", description="اعطِ شخصاً ما عناقاً دافئاً!")
-    @app_commands.describe(member="الشخص الذي تريد معانقته")
-    async def hug_arabic(self, interaction: discord.Interaction, member: discord.Member):
-        if member == interaction.user:
-            return await interaction.response.send_message("لا يمكنك معانقة نفسك، لكنني سأعانقك! 🫂", ephemeral=True)
-            
-        gif_url = random.choice(MEN_HUG_GIFS)
-        
-        embed = discord.Embed(
-            description=f"**{interaction.user.display_name}** يعانق **{member.display_name}**! 🫂",
-            color=EmbedColor.PRIMARY
-        )
-        await interaction.response.send_message(content=gif_url, embed=embed)
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        if message.author.bot:
+            return
 
-    @app_commands.command(name="بوسه", description="قم بتقبيل او معانقة شخص ما!")
-    @app_commands.describe(member="الشخص الذي تريد تقبيله")
-    async def cuddle_arabic(self, interaction: discord.Interaction, member: discord.Member):
-        if member == interaction.user:
-            return await interaction.response.send_message("لا يمكنك فعل ذلك لنفسك! 😅", ephemeral=True)
-            
-        gif_url = random.choice(MEN_CUDDLE_GIFS)
+        content = message.content.strip()
         
-        embed = discord.Embed(
-            description=f"**{interaction.user.display_name}** يبوس **{member.display_name}**! 🥰",
-            color=EmbedColor.PRIMARY
-        )
-        await interaction.response.send_message(content=gif_url, embed=embed)
-
-    @app_commands.command(name="كف", description="اضرب شخصاً ما كفاً على وجهه!")
-    @app_commands.describe(member="الشخص الذي تريد أن تضربه")
-    async def slap_arabic(self, interaction: discord.Interaction, member: discord.Member):
-        if member == interaction.user:
-            return await interaction.response.send_message("لماذا تريد ضرب نفسك؟ توقف عن ذلك!", ephemeral=True)
+        action_type = None
+        if content.startswith("هق"):
+            action_type = "hug"
+        elif content.startswith("بوسه"):
+            action_type = "cuddle"
+        elif content.startswith("كف"):
+            action_type = "slap"
             
-        gif_url = random.choice(MEN_SLAP_GIFS)
-        
-        embed = discord.Embed(
-            description=f"**{interaction.user.display_name}** يعطي كف لـ **{member.display_name}**! 😠",
-            color=EmbedColor.PRIMARY
-        )
-        await interaction.response.send_message(content=gif_url, embed=embed)
+        if action_type and message.mentions:
+            member = message.mentions[0]
+            
+            if member == message.author:
+                if action_type == "hug":
+                    await message.channel.send("لا يمكنك معانقة نفسك، لكنني سأعانقك! 🫂")
+                elif action_type == "cuddle":
+                    await message.channel.send("لا يمكنك فعل ذلك لنفسك! 😅")
+                elif action_type == "slap":
+                    await message.channel.send("لماذا تريد ضرب نفسك؟ توقف عن ذلك!")
+                return
+                
+            file = None
+            if action_type == "hug":
+                gif_url = random.choice(MEN_HUG_GIFS)
+                desc = f"**{message.author.display_name}** يعانق **{member.display_name}**! 🫂"
+            elif action_type == "cuddle":
+                gif_url = random.choice(MEN_CUDDLE_GIFS)
+                desc = f"**{message.author.display_name}** يبوس **{member.display_name}**! 🥰"
+            elif action_type == "slap":
+                gif_path = random.choice(MEN_SLAP_GIFS)
+                file = discord.File(gif_path, filename="slap.gif")
+                desc = f"**{message.author.display_name}** يعطي كف لـ **{member.display_name}**! 😠"
+                
+            embed = discord.Embed(description=desc, color=EmbedColor.PRIMARY)
+            if file:
+                embed.set_image(url="attachment://slap.gif")
+                await message.channel.send(file=file, embed=embed)
+            else:
+                await message.channel.send(content=gif_url, embed=embed)
 
 async def setup(bot: commands.Bot):
     """Setup function for cog loading"""
