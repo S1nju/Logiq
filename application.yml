@@ -37,8 +37,7 @@ plugins:
   lavasrc:
     providers:
       - "scsearch:\"%ISRC%\"" # Search using standard ISRC from Spotify first
-      - "scsearch:%QUERY%"    # Fallback to SoundCloud if YouTube is blocked
-      - "ytsearch:%QUERY%"
+      - "scsearch:%QUERY%"    # Fallback to SoundCloud
     sources:
       spotify: true    # Enable Spotify support
       applemusic: true # Enable Apple Music support
