@@ -33,11 +33,13 @@ plugins:
       - ANDROID_VR
       - TVHTML5EMBEDDED
       - MUSIC
+    oauth:
+      enabled: true
 
   lavasrc:
     providers:
-      - "scsearch:\"%ISRC%\"" # Search using standard ISRC from Spotify first
-      - "scsearch:%QUERY%"    # Fallback to SoundCloud
+      - "ytsearch:\"%ISRC%\"" # Search using standard ISRC from Spotify first
+      - "ytsearch:%QUERY%"    # Fallback to YouTube
     sources:
       spotify: true    # Enable Spotify support
       applemusic: true # Enable Apple Music support

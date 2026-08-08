@@ -156,34 +156,8 @@ class Music(commands.Cog):
                 return
 
         try:
-            is_playlist = False
-            playlist_name = ""
-            
-            # Bypass youtube blocks by enforcing SoundCloud for raw text searches
-            if query.startswith('http://') or query.startswith('https://'):
-                tracks = await wavelink.Playable.search(query)
-                
-                # Manual Spotify -> SoundCloud integration
-                if tracks and "spotify.com" in query:
-                    is_playlist = isinstance(tracks, wavelink.Playlist)
-                    playlist_name = tracks.name if is_playlist else ""
-                    raw_tracks = tracks.tracks[:20] if is_playlist else [tracks[0]]
-                    
-                    translated = []
-                    for t in raw_tracks:
-                        sc_q = await wavelink.Playable.search(f"{t.title} {t.author}", source=wavelink.TrackSource.SoundCloud)
-                        if sc_q:
-                            translated.append(sc_q[0])
-                            
-                    if not translated:
-                        await interaction.followup.send(
-                            embed=EmbedFactory.error("Translation Failed", "Could not find these Spotify tracks on SoundCloud."),
-                            ephemeral=True
-                        )
-                        return
-                    tracks = translated
-            else:
-                tracks = await wavelink.Playable.search(query, source=wavelink.TrackSource.SoundCloud)
+            # Revert to standard Wavelink automated YouTube proxying
+            tracks: wavelink.Search = await wavelink.Playable.search(query)
                 
             if not tracks:
                 await interaction.followup.send(
@@ -193,16 +167,14 @@ class Music(commands.Cog):
                 return
 
             # If it's a playlist, add all tracks
-            if is_playlist or isinstance(tracks, wavelink.Playlist):
-                track_list = tracks.tracks if isinstance(tracks, wavelink.Playlist) else tracks
-                added = len(track_list)
-                for track in track_list:
+            if isinstance(tracks, wavelink.Playlist):
+                added = len(tracks.tracks)
+                for track in tracks.tracks:
                     player.queue.put(track)
                     
-                final_name = tracks.name if isinstance(tracks, wavelink.Playlist) else playlist_name
                 embed = EmbedFactory.success(
                     "Playlist Added",
-                    f"**Added {added} tracks from:** {final_name}\n"
+                    f"**Added {added} tracks from:** {tracks.name}\n"
                     f"**Requested by:** {interaction.user.mention}"
                 )
             else:
