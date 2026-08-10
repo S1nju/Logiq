@@ -97,6 +97,17 @@ class Fun(commands.Cog):
         self.bot = bot
         self.db = db
         self.config = config
+        
+        self.jokes = []
+        try:
+            with open("assets/jokes/humor.tsv", "r", encoding="utf-8") as f:
+                next(f)  # skip header
+                for line in f:
+                    parts = line.strip("\n").split("\t")
+                    if len(parts) >= 3 and parts[2].strip().lower() == "yes":
+                        self.jokes.append(parts[1])
+        except Exception as e:
+            logger.error(f"Failed to load jokes dataset: {e}")
 
     @app_commands.command(name="hug", description="Give someone a warm hug!")
     @app_commands.describe(member="The person you want to hug")
@@ -165,6 +176,12 @@ class Fun(commands.Cog):
 
         content = message.content.strip()
         
+        if "نكتة" in content or "نكته" in content:
+            if hasattr(self, "jokes") and self.jokes:
+                joke = random.choice(self.jokes)
+                await message.reply(joke)
+            return
+
         action_type = None
         if content.startswith("هق"):
             action_type = "hug"
