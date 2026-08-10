@@ -36,6 +36,29 @@ MEN_SLAP_GIFS = [
     "assets/gifs/rpafuilN.gif"
 ]
 
+CRINGE_REPLIES = [
+    "انا وحيد كالقمر... ومخيف كالذيب 🐺🚶‍♂️",
+    "يا ليت المسافات تنطوي واشوفك قدامي الحين 🥺💔",
+    "ممكن نتعرف؟ تري انا مو زي باقي العيال 🌹😎",
+    "انتي القمر ولا القمر ماخذ نورك؟ 🌚✨",
+    "انا ما ابكي... بس عيني دخل فيها تراب 😔🚭",
+    "ليتني كنت دمعه تنولد بعينك واموت بخدك 💧🥀",
+    "انا شخص غامض، محد يفهمني الا النت وقوقل 💻🖤",
+    "تدرين وش الشي المشترك بيني وبين كريستيانو؟ كلنا اساطير بس انا اسطوره قلبك ⚽😏",
+    "عيونك دوختني.. ممكن تعطيني باندول؟ 💊😵"
+]
+
+HLA_REPLIES = [
+    "هلا والله 👋",
+    "ارحب ملايين ✨",
+    "يا هلا ومسهلا 🌹",
+    "هلا بالطش والرش 🌧️",
+    "المهلي ما يولي يا عين اخوك 👑",
+    "ياهلا بالزين كله 💖",
+    "نورت المكان يالغالي 🌟",
+    "هلا بك ياعيني ✌️"
+]
+
 class ActionBackView(discord.ui.View):
     def __init__(self, action: str, author: discord.Member, target: discord.Member, label: str, back_desc_func):
         super().__init__(timeout=10.0)
@@ -181,6 +204,17 @@ class Fun(commands.Cog):
                 joke = random.choice(self.jokes)
                 await message.reply(joke)
             return
+
+        if content == ".":
+            cringe = random.choice(CRINGE_REPLIES)
+            await message.reply(cringe)
+            return
+
+        if "هلا" in content.split() or content.startswith("هلا"):
+            if random.random() < 0.6:
+                reply = random.choice(HLA_REPLIES)
+                await message.reply(reply)
+                return
 
         action_type = None
         if content.startswith("هق"):
