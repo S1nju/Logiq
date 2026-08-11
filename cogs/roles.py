@@ -108,9 +108,9 @@ class RoleMenuSetupModal(discord.ui.Modal, title="Create Role Menu"):
             )
             return
 
-        if len(role_list) > 25:
+        if len(role_list) > 125:
             await interaction.response.send_message(
-                embed=EmbedFactory.error("Too Many Roles", "Discord allows maximum 25 options per menu."),
+                embed=EmbedFactory.error("Too Many Roles", "Discord allows maximum 125 options per menu (split across 5 drops)."),
                 ephemeral=True
             )
             return
@@ -132,11 +132,39 @@ class RoleMenuSetupModal(discord.ui.Modal, title="Create Role Menu"):
             }
         })
 
+        embed = EmbedFactory.create(
+            title=self.title_input.value,
+            description=self.description_input.value,
+            color=EmbedColor.PRIMARY
+        )
+        
+        roles_texts = []
+        current_text = ""
+        for r in role_list:
+            line = f"{r['emoji']} {r['role'].mention}\n"
+            if len(current_text) + len(line) > 1024:
+                roles_texts.append(current_text)
+                current_text = line
+            else:
+                current_text += line
+        if current_text:
+            roles_texts.append(current_text)
+            
+        for i, text in enumerate(roles_texts):
+            embed.add_field(name="Available Roles" if i == 0 else "\u200b", value=text, inline=False)
+            
+        if is_exclusive:
+            view = ExclusiveRoleView(role_list, self.title_input.value, timeout=None)
+        else:
+            view = MultiRoleView(role_list, timeout=None)
+            
+        await self.channel.send(embed=embed, view=view)
+
         # Respond to interaction
         await interaction.response.send_message(
             embed=EmbedFactory.success(
                 "Role Menu Configured!",
-                f"{'Exclusive' if is_exclusive else 'Multi-select'} role menu saved! Users can type `رول` to access it."
+                f"{'Exclusive' if is_exclusive else 'Multi-select'} role menu sent to {self.channel.mention}."
             ),
             ephemeral=True
         )
@@ -147,15 +175,15 @@ class RoleMenuSetupModal(discord.ui.Modal, title="Create Role Menu"):
 class ExclusiveRoleSelect(discord.ui.Select):
     """Dropdown for exclusive role selection (pick only one)"""
 
-    def __init__(self, role_data: List[dict], category_name: str):
+    def __init__(self, role_data: List[dict], category_name: str, all_role_ids: List[int], index: int = 0):
         options = [
             discord.SelectOption(
-                label=r['label'],
-                description=t("roles.get_role", default="Get the {role} role", role=r['label']),
+                label=r['label'][:100],
+                description=t("roles.get_role", default="Get the {role} role", role=r['label'])[:100],
                 value=str(r['role'].id),
                 emoji=r['emoji']
             )
-            for r in role_data[:25]
+            for r in role_data
         ]
 
         super().__init__(
@@ -163,9 +191,9 @@ class ExclusiveRoleSelect(discord.ui.Select):
             min_values=1,
             max_values=1,
             options=options,
-            custom_id=f"exclusive_role_{category_name[:50]}"
+            custom_id=f"exclusive_role_{category_name[:30]}_{index}"
         )
-        self.role_ids = [r['role'].id for r in role_data]
+        self.all_role_ids = all_role_ids
 
     async def callback(self, interaction: discord.Interaction):
         """Handle exclusive role selection - LOCKED after first selection"""
@@ -173,7 +201,7 @@ class ExclusiveRoleSelect(discord.ui.Select):
             # Check if user already has any role from THIS MENU ONLY
             user_has_role = False
             existing_role = None
-            for role_id in self.role_ids:
+            for role_id in self.all_role_ids:
                 role = interaction.guild.get_role(role_id)
                 if role and role in interaction.user.roles:
                     user_has_role = True
@@ -228,15 +256,15 @@ class ExclusiveRoleSelect(discord.ui.Select):
 class MultiRoleSelect(discord.ui.Select):
     """Dropdown menu for multiple role selection"""
 
-    def __init__(self, role_data: List[dict]):
+    def __init__(self, role_data: List[dict], index: int = 0):
         options = [
             discord.SelectOption(
-                label=r['label'],
-                description=t("roles.toggle_role", default="Toggle {role} role", role=r['label']),
+                label=r['label'][:100],
+                description=t("roles.toggle_role", default="Toggle {role} role", role=r['label'])[:100],
                 value=str(r['role'].id),
                 emoji=r['emoji']
             )
-            for r in role_data[:25]
+            for r in role_data
         ]
 
         super().__init__(
@@ -244,7 +272,7 @@ class MultiRoleSelect(discord.ui.Select):
             min_values=0,
             max_values=len(options),
             options=options,
-            custom_id="multi_role_select"
+            custom_id=f"multi_role_select_{index}"
         )
 
     async def callback(self, interaction: discord.Interaction):
@@ -307,7 +335,12 @@ class ExclusiveRoleView(discord.ui.View):
     def __init__(self, role_data: List[dict], category_name: str, timeout: Optional[float] = None):
         super().__init__(timeout=timeout)
         self.message = None
-        self.add_item(ExclusiveRoleSelect(role_data, category_name))
+        
+        all_role_ids = [int(r['role'].id) for r in role_data]
+        role_chunks = [role_data[i:i + 25] for i in range(0, len(role_data), 25)]
+        
+        for i, chunk in enumerate(role_chunks[:5]):
+            self.add_item(ExclusiveRoleSelect(chunk, category_name, all_role_ids, i))
 
     async def on_timeout(self):
         for child in self.children:
@@ -325,7 +358,11 @@ class MultiRoleView(discord.ui.View):
     def __init__(self, role_data: List[dict], timeout: Optional[float] = None):
         super().__init__(timeout=timeout)
         self.message = None
-        self.add_item(MultiRoleSelect(role_data))
+        
+        role_chunks = [role_data[i:i + 25] for i in range(0, len(role_data), 25)]
+        
+        for i, chunk in enumerate(role_chunks[:5]):
+            self.add_item(MultiRoleSelect(chunk, i))
 
     async def on_timeout(self):
         for child in self.children:
@@ -360,40 +397,22 @@ class Roles(commands.Cog):
             return
 
         content = message.content.strip()
-        if content in ["رول", "رولات"]:
-            guild_data = await self.db.get_guild(message.guild.id)
-            if not guild_data or "role_menu_data" not in guild_data:
+        if content.startswith("رول ") or content == "رول":
+            if not getattr(message.author.guild_permissions, 'administrator', False):
                 return
             
-            menu_data = guild_data["role_menu_data"]
-            role_list = []
-            for r in menu_data["roles"]:
-                role = message.guild.get_role(int(r['id']))
-                if role:
-                    role_list.append({
-                        'role': role,
-                        'emoji': r['emoji'],
-                        'label': r['label']
-                    })
-            if not role_list:
-                return
-
-            embed = EmbedFactory.create(
-                title=menu_data.get("title", "Choose Your Roles"),
-                description=menu_data.get("description", "Select your roles below."),
-                color=EmbedColor.PRIMARY
-            )
-            roles_text = "\n".join([f"{r['emoji']} {r['role'].mention}" for r in role_list])
-            embed.add_field(name="Available Roles", value=roles_text, inline=False)
-            
-            is_exclusive = menu_data.get("is_exclusive", False)
-            if is_exclusive:
-                view = ExclusiveRoleView(role_list, menu_data.get("title", "role_menu"), timeout=15.0)
-            else:
-                view = MultiRoleView(role_list, timeout=15.0)
+            if len(message.mentions) >= 1 and len(message.role_mentions) >= 1:
+                target_user = message.mentions[0]
+                target_role = message.role_mentions[0]
                 
-            msg = await message.reply(embed=embed, view=view, delete_after=15.0)
-            view.message = msg
+                try:
+                    await target_user.add_roles(target_role)
+                    embed = EmbedFactory.success("Role Added", f"Added {target_role.mention} to {target_user.mention}")
+                    await message.reply(embed=embed)
+                    logger.info(f"{message.author} added role {target_role} to {target_user} via explicit command")
+                except discord.Forbidden:
+                    embed = EmbedFactory.error("Error", "I don't have permission to manage roles")
+                    await message.reply(embed=embed)
 
 
     @app_commands.command(name="create-role-menu", description="Create a role menu (Admin)")
@@ -499,10 +518,38 @@ class Roles(commands.Cog):
             }
         })
         
+        embed = EmbedFactory.create(
+            title=title,
+            description=description,
+            color=EmbedColor.PRIMARY
+        )
+        
+        roles_texts = []
+        current_text = ""
+        for r in role_list:
+            line = f"{r['emoji']} {r['role'].mention}\n"
+            if len(current_text) + len(line) > 1024:
+                roles_texts.append(current_text)
+                current_text = line
+            else:
+                current_text += line
+        if current_text:
+            roles_texts.append(current_text)
+            
+        for i, text in enumerate(roles_texts):
+            embed.add_field(name="Available Roles" if i == 0 else "\u200b", value=text, inline=False)
+            
+        if is_exclusive:
+            view = ExclusiveRoleView(role_list, title, timeout=None)
+        else:
+            view = MultiRoleView(role_list, timeout=None)
+            
+        await target_channel.send(embed=embed, view=view)
+        
         await interaction.response.send_message(
             embed=EmbedFactory.success(
-                "Role Menu Configured!",
-                f"{'Exclusive' if is_exclusive else 'Multi-select'} role menu saved! Users can type `رول` to access it."
+                "Role Menu Sent!",
+                f"{'Exclusive' if is_exclusive else 'Multi-select'} role menu sent to {target_channel.mention}."
             ),
             ephemeral=True
         )

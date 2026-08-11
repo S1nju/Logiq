@@ -7,17 +7,17 @@ api_keys:
 bot:
   activity: يتم الادارة
   activity_type: watching
-  language: ar
+  config_channel: 1494454599988281426
+  language: en
   prefix: /
   status: online
   token: ${DISCORD_BOT_TOKEN}
-  config_channel: 1494454599988281426
 database:
   database_name: Logiq
   mongodb_uri: ${MONGODB_URI}
   pool_size: 10
 i18n:
-  language: ar
+  language: en
 logging:
   date_format: '%Y-%m-%d %H:%M:%S'
   file: logs/bot.log
