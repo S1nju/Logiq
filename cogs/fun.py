@@ -103,6 +103,15 @@ HLA_REPLIES = [
     "هلا بك ياعيني ✌️"
 ]
 
+MASA_REPLIES = [
+    "مساء الخوخ ممكن صورتك ياصاروخ <:emoji:1511111269988696124>",
+    "مساء الكيري يامعذب تفكيري <:emoji:1511111268096802817>",
+    "مساء القمر، ممكن صورتك يا أحلى بشر <:loveShy:1536532493988270161> ",
+    "مساء الليمون، صورتك تخلي القلب يصير مجنون <:emoji_50:1514944439917875341> ",
+    "مساء نور<:s_catuwu:1507989344483282954> ...",
+    "مساء النور، يا اللي وجودك بالقلب له حضور <:plz_no:1534951124048674838>"
+]
+
 class ActionBackView(discord.ui.View):
     def __init__(self, action: str, author: discord.Member, target: discord.Member, label: str, back_desc_func):
         super().__init__(timeout=10.0)
@@ -261,6 +270,11 @@ class Fun(commands.Cog):
                 reply = random.choice(HLA_REPLIES)
                 await message.reply(reply)
                 return
+
+        if "مساء الخير" in content:
+            reply = random.choice(MASA_REPLIES)
+            await message.reply(reply)
+            return
 
         action_type = None
         if content.startswith("هق"):
