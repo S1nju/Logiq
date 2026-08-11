@@ -415,6 +415,19 @@ class Roles(commands.Cog):
                     await message.reply(embed=embed)
 
 
+    @app_commands.command(name="setup-role-menu", description="Setup a large role menu via Modal (Up to 125 roles)")
+    @app_commands.describe(channel="Channel to send menu (optional)")
+    @is_admin()
+    async def setup_role_menu(
+        self,
+        interaction: discord.Interaction,
+        channel: Optional[discord.TextChannel] = None
+    ):
+        """Invoke modal for creating a massive role menu"""
+        target_channel = channel or interaction.channel
+        await interaction.response.send_modal(RoleMenuSetupModal(self, target_channel))
+
+
     @app_commands.command(name="create-role-menu", description="Create a role menu (Admin)")
     @app_commands.describe(
         title="Title of the role menu",
