@@ -37,7 +37,7 @@ MEN_SLAP_GIFS = [
 ]
 
 CRINGE_REPLIES = [
-    "انا وحيد كالقمر... ومخيف كالذيب 🐺🚶‍♂️",
+   
     "يا ليت المسافات تنطوي واشوفك قدامي الحين 🥺💔",
     "ممكن نتعرف؟ تري انا مو زي باقي العيال 🌹😎",
     "انتي القمر ولا القمر ماخذ نورك؟ 🌚✨",
@@ -251,6 +251,8 @@ class Fun(commands.Cog):
 
         if content == ".":
             cringe = random.choice(CRINGE_REPLIES)
+            if message.author.id == 760490136403312691:
+                cringe =  "انا وحيد كالقمر... ومخيف كالذيب 🐺🚶‍♂️"
             await message.reply(cringe)
             return
 
