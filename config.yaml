@@ -11,6 +11,7 @@ bot:
   prefix: /
   status: online
   token: ${DISCORD_BOT_TOKEN}
+  config_channel: 1494454599988281426
 database:
   database_name: Logiq
   mongodb_uri: ${MONGODB_URI}

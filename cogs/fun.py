@@ -245,36 +245,66 @@ class Fun(commands.Cog):
         await interaction.response.send_message(file=file, embed=embed, view=view)
         view.message = await interaction.original_response()
 
+    @app_commands.command(name="add_reply", description="Add a custom reply for a specific trigger in a channel")
+    @app_commands.describe(
+        channel="The channel where the reply will trigger",
+        trigger="The keyword or phrase to trigger the reply",
+        reply="The reply text to send"
+    )
+    @app_commands.default_permissions(manage_messages=True)
+    async def add_reply(self, interaction: discord.Interaction, channel: discord.TextChannel, trigger: str, reply: str):
+        if not hasattr(self.db, "add_custom_reply"):
+            return await interaction.response.send_message("Database not configured for custom replies.", ephemeral=True)
+            
+        await self.db.add_custom_reply(interaction.guild.id, channel.id, trigger, reply)
+        await interaction.response.send_message(f"Custom reply added for `{trigger}` in {channel.mention}!", ephemeral=True)
+
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         if message.author.bot:
             return
 
+        if not message.guild:
+            return
+
         content = message.content.strip()
-        
-        if "نكتة" in content or "نكته" in content:
-            if hasattr(self, "jokes") and self.jokes:
-                joke = random.choice(self.jokes)
-                await message.reply(joke)
-            return
 
-        if content == ".":
-            cringe = random.choice(CRINGE_REPLIES)
-            if message.author.id == 760490136403312691:
-                cringe =  "انا وحيد كالقمر... ومخيف كالذيب 🐺🚶‍♂️"
-            await message.reply(cringe)
-            return
+        # Custom DB Replies
+        if hasattr(self.db, "get_all_custom_replies"):
+            custom_replies = await self.db.get_all_custom_replies(message.guild.id, message.channel.id)
+            if custom_replies:
+                matched_replies = [cr["reply"] for cr in custom_replies if cr["trigger"] in content]
+                if matched_replies:
+                    await message.reply(random.choice(matched_replies))
+                    return
 
-        if "هلا" in content.split() or content.startswith("هلا"):
-            if random.random() < 0.6:
-                reply = random.choice(HLA_REPLIES)
-                await message.reply(reply)
+        config_channel = self.config.get("bot", {}).get("config_channel", 1494454599988281426)
+
+        # Handle hardcoded replies only if in config_channel
+        if message.channel.id == config_channel:
+            if "نكتة" in content or "نكته" in content:
+                if hasattr(self, "jokes") and self.jokes:
+                    joke = random.choice(self.jokes)
+                    await message.reply(joke)
                 return
 
-        if "مساء الخير" in content:
-            reply = random.choice(MASA_REPLIES)
-            await message.reply(reply)
-            return
+            if content == ".":
+                cringe = random.choice(CRINGE_REPLIES)
+                if message.author.id == 760490136403312691:
+                    cringe =  "انا وحيد كالقمر... ومخيف كالذيب 🐺🚶‍♂️"
+                await message.reply(cringe)
+                return
+
+            if "هلا" in content.split() or content.startswith("هلا"):
+                if random.random() < 0.6:
+                    reply = random.choice(HLA_REPLIES)
+                    await message.reply(reply)
+                    return
+
+            if "مساء الخير" in content:
+                reply = random.choice(MASA_REPLIES)
+                await message.reply(reply)
+                return
 
         action_type = None
         if content.startswith("هق"):

@@ -260,3 +260,24 @@ class DatabaseManager:
         """Create shop item"""
         result = await self.db.shop.insert_one(item_data)
         return str(result.inserted_id)
+
+    # Custom Replies operations
+    async def get_all_custom_replies(self, guild_id: int, channel_id: int) -> List[Dict[str, Any]]:
+        """Get all custom replies for a specific channel"""
+        cursor = self.db.custom_replies.find({
+            "guild_id": guild_id,
+            "channel_id": channel_id
+        })
+        return await cursor.to_list(length=1000)
+
+    async def add_custom_reply(self, guild_id: int, channel_id: int, trigger: str, reply: str) -> str:
+        """Create a custom reply"""
+        reply_data = {
+            "guild_id": guild_id,
+            "channel_id": channel_id,
+            "trigger": trigger,
+            "reply": reply,
+            "created_at": asyncio.get_event_loop().time()
+        }
+        result = await self.db.custom_replies.insert_one(reply_data)
+        return str(result.inserted_id)
