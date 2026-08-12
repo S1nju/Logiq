@@ -259,6 +259,44 @@ class Fun(commands.Cog):
         await self.db.add_custom_reply(interaction.guild.id, channel.id, trigger, reply)
         await interaction.response.send_message(f"Custom reply added for `{trigger}` in {channel.mention}!", ephemeral=True)
 
+    @app_commands.command(name="list_replies", description="List all custom replies for a channel")
+    @app_commands.describe(channel="The channel to list replies for")
+    @app_commands.default_permissions(manage_messages=True)
+    async def list_replies(self, interaction: discord.Interaction, channel: discord.TextChannel):
+        if not hasattr(self.db, "get_all_custom_replies"):
+            return await interaction.response.send_message("Database not configured for custom replies.", ephemeral=True)
+            
+        custom_replies = await self.db.get_all_custom_replies(interaction.guild.id, channel.id)
+        if not custom_replies:
+            return await interaction.response.send_message(f"No custom replies configured for {channel.mention}.", ephemeral=True)
+            
+        desc = ""
+        for i, r in enumerate(custom_replies, 1):
+            t = r.get('trigger', 'Unknown')
+            resp = r.get('reply', 'Unknown')
+            if len(resp) > 50:
+                resp = resp[:47] + "..."
+            desc += f"**{i}.** Trigger: `{t}` | Reply: `{resp}`\n"
+            
+        embed = discord.Embed(title=f"Custom Replies for #{channel.name}", description=desc, color=EmbedColor.PRIMARY)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    @app_commands.command(name="delete_reply", description="Delete a custom reply for a specific trigger")
+    @app_commands.describe(
+        channel="The channel where the reply triggers",
+        trigger="The keyword or phrase of the reply to delete"
+    )
+    @app_commands.default_permissions(manage_messages=True)
+    async def delete_reply(self, interaction: discord.Interaction, channel: discord.TextChannel, trigger: str):
+        if not hasattr(self.db, "remove_custom_reply"):
+            return await interaction.response.send_message("Database not configured for custom replies.", ephemeral=True)
+            
+        success = await self.db.remove_custom_reply(interaction.guild.id, channel.id, trigger)
+        if success:
+            await interaction.response.send_message(f"Custom reply for `{trigger}` deleted successfully in {channel.mention}!", ephemeral=True)
+        else:
+            await interaction.response.send_message(f"Could not find a custom reply for `{trigger}` in {channel.mention}.", ephemeral=True)
+
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         if message.author.bot:

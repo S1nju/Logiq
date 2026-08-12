@@ -281,3 +281,12 @@ class DatabaseManager:
         }
         result = await self.db.custom_replies.insert_one(reply_data)
         return str(result.inserted_id)
+
+    async def remove_custom_reply(self, guild_id: int, channel_id: int, trigger: str) -> bool:
+        """Remove a custom reply"""
+        result = await self.db.custom_replies.delete_one({
+            "guild_id": guild_id,
+            "channel_id": channel_id,
+            "trigger": trigger
+        })
+        return result.deleted_count > 0
