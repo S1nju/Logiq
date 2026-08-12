@@ -311,7 +311,9 @@ class Fun(commands.Cog):
         if hasattr(self.db, "get_all_custom_replies"):
             custom_replies = await self.db.get_all_custom_replies(message.guild.id, message.channel.id)
             if custom_replies:
-                matched_replies = [cr["reply"] for cr in custom_replies if cr["trigger"] in content]
+                # Match if it is the exact message, or a distinct word surrounded by spaces
+                padded_content = f" {content} "
+                matched_replies = [cr["reply"] for cr in custom_replies if f" {cr['trigger']} " in padded_content]
                 if matched_replies:
                     await message.reply(random.choice(matched_replies))
                     return
@@ -320,7 +322,7 @@ class Fun(commands.Cog):
 
         # Handle hardcoded replies only if in config_channel
         if message.channel.id == config_channel:
-            if "نكتة" in content or "نكته" in content:
+            if content == "نكتة" or content == "نكته":
                 if hasattr(self, "jokes") and self.jokes:
                     joke = random.choice(self.jokes)
                     await message.reply(joke)
@@ -333,7 +335,7 @@ class Fun(commands.Cog):
                 await message.reply(cringe)
                 return
 
-            if "هلا" in content.split() or content.startswith("هلا"):
+            if content == "هلا" or content.startswith("هلا "):
                 if random.random() < 0.6:
                     reply = random.choice(HLA_REPLIES)
                     await message.reply(reply)
