@@ -91,9 +91,7 @@ class RoleBuilderView(discord.ui.View):
 
     def _get_role_emoji(self, role: discord.Role):
         if role.unicode_emoji:
-            return role.unicode_emoji
-        elif role.icon:
-            return str(role.icon)
+            return str(role.unicode_emoji)
         return "🎭"
 
     @discord.ui.select(cls=discord.ui.RoleSelect, placeholder="Select up to 25 roles to add...", min_values=1, max_values=25, custom_id="setup_role_select")
@@ -157,60 +155,69 @@ class RoleBuilderView(discord.ui.View):
             )
             return
             
-        # Finalize and send to DB
-        db_role_list = []
-        for r in self.current_roles:
-            db_role_list.append({
-                'id': str(r['role'].id),
-                'emoji': r['emoji'],
-                'label': r['label']
+        await interaction.response.defer()
+            
+        try:
+            # Finalize and send to DB
+            db_role_list = []
+            for r in self.current_roles:
+                db_role_list.append({
+                    'id': str(r['role'].id),
+                    'emoji': r['emoji'],
+                    'label': r['label']
+                })
+                
+            await self.cog.db.update_guild(self.guild_id, {
+                "role_menu_data": {
+                    "roles": db_role_list,
+                    "is_exclusive": self.is_exclusive,
+                    "title": self.menu_title,
+                    "description": self.menu_desc
+                }
             })
-            
-        await self.cog.db.update_guild(self.guild_id, {
-            "role_menu_data": {
-                "roles": db_role_list,
-                "is_exclusive": self.is_exclusive,
-                "title": self.menu_title,
-                "description": self.menu_desc
-            }
-        })
 
-        embed = EmbedFactory.create(
-            title=self.menu_title,
-            description=self.menu_desc,
-            color=EmbedColor.PRIMARY
-        )
-        
-        roles_texts = []
-        current_text = ""
-        for r in self.current_roles:
-            line = f"{r['emoji']} {r['role'].mention}\n"
-            if len(current_text) + len(line) > 1024:
+            embed = EmbedFactory.create(
+                title=self.menu_title,
+                description=self.menu_desc,
+                color=EmbedColor.PRIMARY
+            )
+            
+            roles_texts = []
+            current_text = ""
+            for r in self.current_roles:
+                line = f"{r['emoji']} {r['role'].mention}\n"
+                if len(current_text) + len(line) > 1024:
+                    roles_texts.append(current_text)
+                    current_text = line
+                else:
+                    current_text += line
+            if current_text:
                 roles_texts.append(current_text)
-                current_text = line
+                
+            for i, text in enumerate(roles_texts):
+                embed.add_field(name="Available Roles" if i == 0 else "\u200b", value=text, inline=False)
+                
+            if self.is_exclusive:
+                view = ExclusiveRoleView(self.current_roles, self.menu_title, timeout=None)
             else:
-                current_text += line
-        if current_text:
-            roles_texts.append(current_text)
-            
-        for i, text in enumerate(roles_texts):
-            embed.add_field(name="Available Roles" if i == 0 else "\u200b", value=text, inline=False)
-            
-        if self.is_exclusive:
-            view = ExclusiveRoleView(self.current_roles, self.menu_title, timeout=None)
-        else:
-            view = MultiRoleView(self.current_roles, timeout=None)
-            
-        await self.target_channel.send(embed=embed, view=view)
+                view = MultiRoleView(self.current_roles, timeout=None)
+                
+            await self.target_channel.send(embed=embed, view=view)
 
-        await interaction.response.edit_message(
-            embed=EmbedFactory.success(
-                "Role Menu Configured!",
-                f"{'Exclusive' if self.is_exclusive else 'Multi-select'} role menu sent to {self.target_channel.mention} with {len(self.current_roles)} roles."
-            ),
-            view=None
-        )
-        logger.info(f"Role menu successfully created by {interaction.user} with {len(self.current_roles)} roles")
+            await interaction.edit_original_response(
+                embed=EmbedFactory.success(
+                    "Role Menu Configured!",
+                    f"{'Exclusive' if self.is_exclusive else 'Multi-select'} role menu sent to {self.target_channel.mention} with {len(self.current_roles)} roles."
+                ),
+                view=None
+            )
+            logger.info(f"Role menu successfully created by {interaction.user} with {len(self.current_roles)} roles")
+        except Exception as e:
+            logger.error(f"Error finalizing role menu: {e}", exc_info=True)
+            await interaction.followup.send(
+                embed=EmbedFactory.error("Error", f"Failed to send the role menu: {e}"),
+                ephemeral=True
+            )
 
 
 class ExclusiveRoleSelect(discord.ui.Select):
