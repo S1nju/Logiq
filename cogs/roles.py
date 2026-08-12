@@ -318,7 +318,7 @@ class MultiRoleSelect(discord.ui.Select):
         super().__init__(
             placeholder=t("roles.multi_placeholder", default="Select roles to add/remove..."),
             min_values=0,
-            max_values=len(options),
+            max_values=min(2, len(options)),
             options=options,
             custom_id=f"multi_role_select_{index}"
         )
@@ -327,14 +327,33 @@ class MultiRoleSelect(discord.ui.Select):
         """Handle role selection"""
         try:
             selected_role_ids = {int(value) for value in self.values}
+            
+            # Find all role IDs managed by the entire menu View
+            menu_role_ids = set()
+            for child in self.view.children:
+                if isinstance(child, discord.ui.Select):
+                    for option in child.options:
+                        menu_role_ids.add(int(option.value))
+                        
+            current_user_menu_roles = {role.id for role in interaction.user.roles if role.id in menu_role_ids}
+            roles_affected_by_this_select = {int(option.value) for option in self.options}
+            
+            # Predict their final set of menu roles
+            future_menu_roles = current_user_menu_roles - roles_affected_by_this_select
+            future_menu_roles.update(selected_role_ids)
+            
+            if len(future_menu_roles) > 2:
+                return await interaction.response.send_message(
+                    embed=EmbedFactory.error("Role Limit Exceeded", "You can only select up to 2 roles from this menu!"),
+                    ephemeral=True
+                )
+                
             current_role_ids = {role.id for role in interaction.user.roles}
 
             roles_to_add = []
             roles_to_remove = []
 
-            available_role_ids = {int(option.value) for option in self.options}
-
-            for role_id in available_role_ids:
+            for role_id in roles_affected_by_this_select:
                 role = interaction.guild.get_role(role_id)
                 if not role:
                     continue
