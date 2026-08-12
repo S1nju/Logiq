@@ -35,14 +35,6 @@ class RoleMenuSetupModal(discord.ui.Modal, title="Create Role Menu"):
         max_length=500
     )
 
-    role_mentions = discord.ui.TextInput(
-        label="Roles (mention with @)",
-        placeholder="Type @ and select roles. Example: @Gamer @Artist @Developer",
-        style=discord.TextStyle.paragraph,
-        required=True,
-        max_length=1000
-    )
-
     exclusive = discord.ui.TextInput(
         label="Exclusive? (yes/no)",
         placeholder="Type 'yes' if users can only pick ONE role",
@@ -58,89 +50,140 @@ class RoleMenuSetupModal(discord.ui.Modal, title="Create Role Menu"):
         self.title_input.placeholder = t("roles.title_placeholder", default="e.g., Choose Your Roles")
         self.description_input.label = t("roles.desc_input", default="Menu Description")
         self.description_input.placeholder = t("roles.desc_placeholder", default="e.g., Select your preferred roles from the dropdown below")
-        self.role_mentions.label = t("roles.mentions_input", default="Roles (mention with @)")
-        self.role_mentions.placeholder = t("roles.mentions_placeholder", default="Type @ and select roles. Example: @Gamer @Artist @Developer")
         self.exclusive.label = t("roles.exclusive_input", default="Exclusive? (yes/no)")
         self.exclusive.placeholder = t("roles.exclusive_placeholder", default="Type 'yes' if users can only pick ONE role")
 
     async def on_submit(self, interaction: discord.Interaction):
         """Handle modal submission"""
-        import re
-        
-        # Parse exclusive setting
         is_exclusive = self.exclusive.value.lower() in ['yes', 'y', 'true']
+        
+        view = RoleBuilderView(
+            cog=self.cog,
+            guild_id=interaction.guild_id,
+            title=self.title_input.value,
+            description=self.description_input.value,
+            is_exclusive=is_exclusive,
+            target_channel=self.channel,
+            current_roles=[]
+        )
+        
+        embed = discord.Embed(
+            title="🛠️ Building Role Menu...",
+            description="**Currently Added (0/125):**\nNone\n\nUse the dropdown below to select up to 25 roles at a time, then click **Add Selected Roles**.",
+            color=EmbedColor.PRIMARY
+        )
+        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+        logger.info(f"Role menu setup started by {interaction.user}")
 
-        # Parse role mentions
-        role_list = []
-        text = self.role_mentions.value
-        role_ids = re.findall(r'<@&(\d+)>', text)
 
-        if not role_ids:
+class RoleBuilderView(discord.ui.View):
+    """View for iterative role selection up to 125 roles"""
+
+    def __init__(self, cog, guild_id: int, title: str, description: str, is_exclusive: bool, target_channel: discord.TextChannel, current_roles: list):
+        super().__init__(timeout=900)
+        self.cog = cog
+        self.guild_id = guild_id
+        self.menu_title = title
+        self.menu_desc = description
+        self.is_exclusive = is_exclusive
+        self.target_channel = target_channel
+        self.current_roles = current_roles
+
+    def _get_role_emoji(self, role: discord.Role):
+        if role.unicode_emoji:
+            return role.unicode_emoji
+        elif role.icon:
+            return str(role.icon)
+        return "🎭"
+
+    @discord.ui.select(cls=discord.ui.RoleSelect, placeholder="Select up to 25 roles to add...", min_values=1, max_values=25, custom_id="setup_role_select")
+    async def role_select(self, interaction: discord.Interaction, select: discord.ui.RoleSelect):
+        # We defer to allow picking roles. The 'Add Selected' button handles the logic.
+        await interaction.response.defer()
+
+    @discord.ui.button(label="Add Selected Roles", style=discord.ButtonStyle.success, row=1, custom_id="setup_add_btn")
+    async def add_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        roles_to_add = self.role_select.values
+        if not roles_to_add:
             await interaction.response.send_message(
-                embed=EmbedFactory.error("No Roles Found", "Please mention roles using @. Type @ and select roles from the list that appears."),
+                embed=EmbedFactory.error("No Roles Selected", "Please choose roles from the dropdown first!"), 
                 ephemeral=True
             )
             return
 
-        for role_id in role_ids:
-            role = interaction.guild.get_role(int(role_id))
-            if role:
-                # Skip @everyone and bot integration roles
-                if role.is_default() or role.is_integration():
-                    continue
-                    
-                role_emoji = None
-                if role.unicode_emoji:
-                    role_emoji = role.unicode_emoji
-                elif role.icon:
-                    role_emoji = str(role.icon)
-
-                role_list.append({
+        added = 0
+        for role in roles_to_add:
+            if role.is_default() or role.is_integration():
+                continue
+            if not any(r['role'].id == role.id for r in self.current_roles):
+                self.current_roles.append({
                     'role': role,
-                    'emoji': role_emoji or "🎭",
+                    'emoji': self._get_role_emoji(role),
                     'label': role.name
                 })
+                added += 1
 
-        if not role_list:
+        if len(self.current_roles) > 125:
+            self.current_roles = self.current_roles[:125]
             await interaction.response.send_message(
-                embed=EmbedFactory.error("No Valid Roles", f"Found {len(role_ids)} role mentions but they cannot be used (might be bot roles or @everyone)."),
+                embed=EmbedFactory.warning("Limit Reached", "Maximum of 125 roles reached. You cannot add any more."),
+                ephemeral=True
+            )
+
+        # Refresh the UI
+        new_view = RoleBuilderView(
+            self.cog, self.guild_id, self.menu_title, self.menu_desc, 
+            self.is_exclusive, self.target_channel, self.current_roles
+        )
+        
+        display_roles = ", ".join(r['role'].mention for r in self.current_roles)
+        if len(display_roles) > 3000:
+            display_roles = display_roles[:3000] + "... (truncated)"
+            
+        embed = discord.Embed(
+            title="🛠️ Building Role Menu...",
+            description=f"**Currently Added ({len(self.current_roles)}/125):**\n{display_roles or 'None'}\n\nUse the dropdown below to select up to 25 roles at a time, then click **Add Selected Roles**.",
+            color=EmbedColor.PRIMARY
+        )
+        
+        await interaction.response.edit_message(embed=embed, view=new_view)
+
+    @discord.ui.button(label="Finish & Send Menu", style=discord.ButtonStyle.primary, row=1, custom_id="setup_finish_btn")
+    async def finish_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not self.current_roles:
+            await interaction.response.send_message(
+                embed=EmbedFactory.error("Error", "You must add at least 1 valid role before finishing!"), 
                 ephemeral=True
             )
             return
-
-        if len(role_list) > 125:
-            await interaction.response.send_message(
-                embed=EmbedFactory.error("Too Many Roles", "Discord allows maximum 125 options per menu (split across 5 drops)."),
-                ephemeral=True
-            )
-            return
-
+            
+        # Finalize and send to DB
         db_role_list = []
-        for r in role_list:
+        for r in self.current_roles:
             db_role_list.append({
                 'id': str(r['role'].id),
                 'emoji': r['emoji'],
                 'label': r['label']
             })
             
-        await self.cog.db.update_guild(interaction.guild_id, {
+        await self.cog.db.update_guild(self.guild_id, {
             "role_menu_data": {
                 "roles": db_role_list,
-                "is_exclusive": is_exclusive,
-                "title": self.title_input.value,
-                "description": self.description_input.value
+                "is_exclusive": self.is_exclusive,
+                "title": self.menu_title,
+                "description": self.menu_desc
             }
         })
 
         embed = EmbedFactory.create(
-            title=self.title_input.value,
-            description=self.description_input.value,
+            title=self.menu_title,
+            description=self.menu_desc,
             color=EmbedColor.PRIMARY
         )
         
         roles_texts = []
         current_text = ""
-        for r in role_list:
+        for r in self.current_roles:
             line = f"{r['emoji']} {r['role'].mention}\n"
             if len(current_text) + len(line) > 1024:
                 roles_texts.append(current_text)
@@ -153,23 +196,21 @@ class RoleMenuSetupModal(discord.ui.Modal, title="Create Role Menu"):
         for i, text in enumerate(roles_texts):
             embed.add_field(name="Available Roles" if i == 0 else "\u200b", value=text, inline=False)
             
-        if is_exclusive:
-            view = ExclusiveRoleView(role_list, self.title_input.value, timeout=None)
+        if self.is_exclusive:
+            view = ExclusiveRoleView(self.current_roles, self.menu_title, timeout=None)
         else:
-            view = MultiRoleView(role_list, timeout=None)
+            view = MultiRoleView(self.current_roles, timeout=None)
             
-        await self.channel.send(embed=embed, view=view)
+        await self.target_channel.send(embed=embed, view=view)
 
-        # Respond to interaction
-        await interaction.response.send_message(
+        await interaction.response.edit_message(
             embed=EmbedFactory.success(
                 "Role Menu Configured!",
-                f"{'Exclusive' if is_exclusive else 'Multi-select'} role menu sent to {self.channel.mention}."
+                f"{'Exclusive' if self.is_exclusive else 'Multi-select'} role menu sent to {self.target_channel.mention} with {len(self.current_roles)} roles."
             ),
-            ephemeral=True
+            view=None
         )
-
-        logger.info(f"Role menu created by {interaction.user} with {len(role_list)} roles")
+        logger.info(f"Role menu successfully created by {interaction.user} with {len(self.current_roles)} roles")
 
 
 class ExclusiveRoleSelect(discord.ui.Select):
