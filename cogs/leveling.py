@@ -72,7 +72,13 @@ class Leveling(commands.Cog):
 
             # Send level up message
             embed = EmbedFactory.level_up(message.author, new_level, new_xp)
-            await message.channel.send(embed=embed)
+            level_up_channel = self.module_config.get('level-systemᴿᴹᴰ')
+            if level_up_channel:
+                channel = message.guild.get_channel(level_up_channel)
+                if channel:
+                    await channel.send(embed=embed)
+            else:
+                await message.channel.send(embed=embed)
             logger.info(f"{message.author} leveled up to {new_level} in {message.guild}")
         else:
             await self.db.update_user(message.author.id, message.guild.id, {'xp': new_xp})
