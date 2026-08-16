@@ -187,6 +187,10 @@ class DatabaseManager:
         from bson import ObjectId
         return await self.db.tickets.find_one({"_id": ObjectId(ticket_id)})
 
+    async def get_ticket_by_channel(self, channel_id: int) -> Optional[Dict[str, Any]]:
+        """Get ticket by channel ID"""
+        return await self.db.tickets.find_one({"channel_id": channel_id})
+
     async def update_ticket(self, ticket_id: str, data: Dict[str, Any]) -> bool:
         """Update ticket"""
         from bson import ObjectId
@@ -195,6 +199,59 @@ class DatabaseManager:
             {"$set": data}
         )
         return result.modified_count > 0
+
+    async def claim_ticket(self, channel_id: int, user_id: int) -> bool:
+        """Set claimed_by and status for ticket channel"""
+        result = await self.db.tickets.update_one(
+            {"channel_id": channel_id},
+            {"$set": {
+                "claimed_by": user_id,
+                "status": "claimed",
+                "claimed_at": asyncio.get_event_loop().time()
+            }}
+        )
+        return result.modified_count > 0
+
+    async def add_ticket_score(self, user_id: int, guild_id: int, points: int = 1, action: str = "message") -> bool:
+        """Increment ticket score and stats for staff user"""
+        inc_data = {"ticket_score": points}
+        if action == "claim":
+            inc_data["tickets_claimed"] = 1
+        elif action == "message":
+            inc_data["ticket_messages"] = 1
+        elif action == "close":
+            inc_data["tickets_closed"] = 1
+
+        result = await self.db.users.update_one(
+            {"user_id": user_id, "guild_id": guild_id},
+            {"$inc": inc_data},
+            upsert=True
+        )
+        return result.modified_count > 0 or result.upserted_id is not None
+
+    async def get_ticket_leaderboard(self, guild_id: int, limit: int = 10) -> List[Dict[str, Any]]:
+        """Get ticket score leaderboard for guild"""
+        cursor = self.db.users.find(
+            {"guild_id": guild_id, "ticket_score": {"$gt": 0}}
+        ).sort("ticket_score", -1).limit(limit)
+        return await cursor.to_list(length=limit)
+
+    async def get_ticket_score(self, user_id: int, guild_id: int) -> Dict[str, Any]:
+        """Get ticket score stats for user"""
+        user = await self.get_user(user_id, guild_id)
+        if not user:
+            return {
+                "ticket_score": 0,
+                "tickets_claimed": 0,
+                "ticket_messages": 0,
+                "tickets_closed": 0
+            }
+        return {
+            "ticket_score": user.get("ticket_score", 0),
+            "tickets_claimed": user.get("tickets_claimed", 0),
+            "ticket_messages": user.get("ticket_messages", 0),
+            "tickets_closed": user.get("tickets_closed", 0)
+        }
 
     # Analytics operations
     async def log_event(self, event_type: str, data: Dict[str, Any]) -> None:

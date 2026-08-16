@@ -290,6 +290,22 @@ tickets:
   category: الفئة
   close_button: إغلاق التذكرة
   create_button: إنشاء تذكرة
+  claim_button: استلام التذكرة
+  add_access_button: إضافة عضو
+  remove_access_button: إزالة عضو
+  claimed_title: 🙋 تم استلام التذكرة
+  claimed_desc: "{user} قام باستاناف واستلام ملكية هذه التذكرة!\n⭐ تم منح **+10 نقاط**."
+  user_added_title: 👤 تم إضافة عضو
+  user_added_desc: "تم منح {user} إمكانية الوصول لهذه التذكرة بواسطة {author}."
+  user_removed_title: 🚫 تم إزالة عضو
+  user_removed_desc: "تم سحب صلاحية الوصول للتذكرة من {user} بواسطة {author}."
+  add_user_placeholder: "اختر عضواً لإضافته للتذكرة..."
+  remove_user_placeholder: "اختر عضواً لإزالته من التذكرة..."
+  select_user_to_add: "اختر عضواً لمنحه الوصول:"
+  select_user_to_remove: "اختر عضواً لسحب الوصول منه:"
+  ticket_title: 🎫 تذكرة دعم
+  ticket_welcome: "مرحباً {user}!\n\nشكراً لإنشائك تذكرة دعم. يرجى توضيح مشكلتك وسيقوم فريق الدعم بمساعدتك قريباً.\n\n**معرف التذكرة:** {ticket_id}"
+  leaderboard_title: 🏆 قائمة صدارة فريق الدعم
   created_desc: تم إنشاء تذكرة الدعم الخاصة بك!
   created_title: 🎫 تم إنشاء التذكرة
   panel_desc: 'هل تحتاج إلى مساعدة؟ انقر على الزر أدناه لإنشاء تذكرة دعم!
