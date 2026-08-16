@@ -222,13 +222,22 @@ class Tickets(commands.Cog):
 
         return False
 
+    async def is_ticket_channel(self, channel: discord.abc.GuildChannel) -> bool:
+        """Check if channel is a ticket channel"""
+        if not isinstance(channel, discord.TextChannel):
+            return False
+        if channel.name.startswith("🎫") or channel.name.startswith("ticket-"):
+            return True
+        ticket = await self.db.get_ticket_by_channel(channel.id)
+        return ticket is not None
+
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         """Award score points to staff for message activity in ticket channels"""
         if message.author.bot or not message.guild or not isinstance(message.channel, discord.TextChannel):
             return
 
-        if not message.channel.name.startswith("ticket-"):
+        if not await self.is_ticket_channel(message.channel):
             return
 
         guild_config = await self.db.get_guild(message.guild.id)
@@ -276,21 +285,24 @@ class Tickets(commands.Cog):
             )
             return
 
-        # Check if user already has an open ticket
-        existing_tickets = [
-            ch for ch in category.channels
-            if ch.name.startswith(f"ticket-{interaction.user.name.lower()}")
-        ]
+        # Check if user already has an open ticket in database or channel
+        existing_ticket = await self.db.db.tickets.find_one({
+            "guild_id": interaction.guild.id,
+            "user_id": interaction.user.id,
+            "status": {"$ne": "closed"}
+        })
 
-        if existing_tickets:
-            await interaction.response.send_message(
-                embed=EmbedFactory.warning(
-                    "Ticket Exists",
-                    f"You already have an open ticket: {existing_tickets[0].mention}"
-                ),
-                ephemeral=True
-            )
-            return
+        if existing_ticket:
+            existing_channel = interaction.guild.get_channel(existing_ticket.get('channel_id'))
+            if existing_channel:
+                await interaction.response.send_message(
+                    embed=EmbedFactory.warning(
+                        "Ticket Exists",
+                        f"You already have an open ticket: {existing_channel.mention}"
+                    ),
+                    ephemeral=True
+                )
+                return
 
         try:
             # Create ticket channel overwrites
@@ -310,8 +322,12 @@ class Tickets(commands.Cog):
                         send_messages=True
                     )
 
+            # Get sequential ticket number (starting from 631)
+            ticket_number = await self.db.get_next_ticket_number(interaction.guild.id)
+            channel_name = f"🎫・{ticket_number}"
+
             channel = await category.create_text_channel(
-                name=f"ticket-{interaction.user.name}",
+                name=channel_name,
                 overwrites=overwrites
             )
 
@@ -322,7 +338,8 @@ class Tickets(commands.Cog):
                 "channel_id": channel.id,
                 "category": "General Support",
                 "status": "open",
-                "claimed_by": None
+                "claimed_by": None,
+                "number": ticket_number
             }
             ticket_id = await self.db.create_ticket(ticket_data)
 
@@ -331,7 +348,7 @@ class Tickets(commands.Cog):
                 title=t("tickets.ticket_title", default="🎫 Support Ticket"),
                 description=t("tickets.ticket_welcome",
                               default="Hello {user}!\n\nThank you for creating a support ticket. Please describe your issue and a staff member will assist you shortly.\n\n**Ticket ID:** {ticket_id}",
-                              user=interaction.user.mention, ticket_id=ticket_id),
+                              user=interaction.user.mention, ticket_id=ticket_number),
                 color=EmbedColor.SUCCESS
             )
 
@@ -348,7 +365,7 @@ class Tickets(commands.Cog):
                         title="🎫 New Ticket Created",
                         description=f"**Ticket:** {channel.mention}\n"
                                    f"**Created by:** {interaction.user.mention}\n"
-                                   f"**Ticket ID:** {ticket_id}\n"
+                                   f"**Ticket ID:** {ticket_number}\n"
                                    f"**Status:** Open",
                         color=EmbedColor.SUCCESS
                     )
@@ -362,7 +379,7 @@ class Tickets(commands.Cog):
                 ephemeral=True
             )
 
-            logger.info(f"Ticket created for {interaction.user} in {interaction.guild}")
+            logger.info(f"Ticket created for {interaction.user} in {interaction.guild} ({channel_name})")
 
         except discord.Forbidden:
             await interaction.response.send_message(
@@ -372,7 +389,7 @@ class Tickets(commands.Cog):
 
     async def claim_ticket_for_user(self, interaction: discord.Interaction):
         """Allow an eligible staff member to take ownership of a ticket channel"""
-        if not interaction.channel.name.startswith("ticket-"):
+        if not await self.is_ticket_channel(interaction.channel):
             await interaction.response.send_message(
                 embed=EmbedFactory.error("Not a Ticket", "This button can only be used in ticket channels"),
                 ephemeral=True
@@ -438,7 +455,7 @@ class Tickets(commands.Cog):
 
     async def close_ticket_for_user(self, interaction: discord.Interaction, reason: str = "Resolved"):
         """Close a ticket (called from button or command)"""
-        if not interaction.channel.name.startswith("ticket-"):
+        if not await self.is_ticket_channel(interaction.channel):
             await interaction.response.send_message(
                 embed=EmbedFactory.error("Not a Ticket", "This can only be used in ticket channels"),
                 ephemeral=True

@@ -177,6 +177,25 @@ class DatabaseManager:
         return user.get("warnings", []) if user else []
 
     # Tickets operations
+    async def get_next_ticket_number(self, guild_id: int) -> int:
+        """Get and increment the sequential ticket counter for a guild (starting from 631)"""
+        from pymongo import ReturnDocument
+        guild = await self.db.guilds.find_one({"guild_id": guild_id})
+        if not guild or "ticket_counter" not in guild:
+            await self.db.guilds.update_one(
+                {"guild_id": guild_id},
+                {"$set": {"ticket_counter": 631}},
+                upsert=True
+            )
+            return 631
+
+        result = await self.db.guilds.find_one_and_update(
+            {"guild_id": guild_id},
+            {"$inc": {"ticket_counter": 1}},
+            return_document=ReturnDocument.AFTER
+        )
+        return result.get("ticket_counter", 631) if result else 631
+
     async def create_ticket(self, ticket_data: Dict[str, Any]) -> str:
         """Create support ticket"""
         result = await self.db.tickets.insert_one(ticket_data)
