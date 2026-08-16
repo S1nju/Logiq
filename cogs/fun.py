@@ -99,39 +99,17 @@ class ActionBackView(discord.ui.View):
         self.action = action
         self.author = author
         self.target = target
-        self.MEN_HUG_GIFS = [
-            "assets/gifs/Nsd8B44i.gif",
-            "assets/gifs/nQTI90lm.gif",
-            "assets/gifs/ortTfVI6.gif",
-
-        ]
-
-        self.MEN_CUDDLE_GIFS = [
-            "assets/gifs/CFadSNIwNoleZ.gif",
-            "assets/gifs/4xANsChqMOdmv.gif",
- 
-
-        ]
-
-        self.MEN_SLAP_GIFS = [
-            "assets/gifs/5eFdSOUN.gif",
-            "assets/gifs/Hdp9mqLE0Rstpi.gif",
-            "assets/gifs/J7dNlRIcUYdgq.gif",
-            "assets/gifs/T3Q5FcJ8QLClVE.gif",
-            "assets/gifs/rpafuilN.gif"
-        ]
+        self.MEN_HUG_GIFS = glob.glob("assets/gifs/hugs/*.gif")
+        self.MEN_CUDDLE_GIFS = glob.glob("assets/gifs/kisses/*.gif")
+        self.MEN_SLAP_GIFS = glob.glob("assets/gifs/slaps/*.gif")
         self.message = None
         self.back_desc_func = back_desc_func
-        self.load_gifs()
         
         btn_style = discord.ButtonStyle.danger if action == "slap" else discord.ButtonStyle.primary
         self.action_btn = discord.ui.Button(label=label, style=btn_style)
         self.action_btn.callback = self.button_callback
         self.add_item(self.action_btn)
-    def load_gifs(self):
-        self.MEN_HUG_GIFS = glob.glob("assets/gifs/hugs/*.gif")
-        self.MEN_CUDDLE_GIFS = glob.glob("assets/gifs/kisses/*.gif")
-        self.MEN_SLAP_GIFS = glob.glob("assets/gifs/slaps/*.gif")
+        
 
     async def button_callback(self, interaction: discord.Interaction):
         if interaction.user != self.target:
@@ -180,6 +158,9 @@ class Fun(commands.Cog):
         self.bot = bot
         self.db = db
         self.config = config
+        self.MEN_HUG_GIFS = glob.glob("assets/gifs/hugs/*.gif")
+        self.MEN_CUDDLE_GIFS = glob.glob("assets/gifs/kisses/*.gif")
+        self.MEN_SLAP_GIFS = glob.glob("assets/gifs/slaps/*.gif")
         
         self.jokes = []
         try:
