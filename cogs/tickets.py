@@ -555,15 +555,37 @@ class Tickets(commands.Cog):
         await interaction.response.send_message(embed=embed)
         logger.info(f"Ticket system setup in {interaction.guild}")
 
-    @app_commands.command(name="ticket-panel", description="Send ticket creation panel (Admin)")
+    @app_commands.command(name="ticket-panel", description="Send ticket creation panel with optional custom embed (Admin)")
+    @app_commands.describe(
+        title="Custom title for the ticket panel embed (optional)",
+        description="Custom description for the panel embed (use \\n for line breaks) (optional)",
+        image_url="Custom banner image URL for the panel embed (optional)",
+        thumbnail_url="Custom thumbnail image URL for the panel embed (optional)"
+    )
     @is_admin()
-    async def ticket_panel(self, interaction: discord.Interaction):
+    async def ticket_panel(
+        self,
+        interaction: discord.Interaction,
+        title: Optional[str] = None,
+        description: Optional[str] = None,
+        image_url: Optional[str] = None,
+        thumbnail_url: Optional[str] = None
+    ):
         """Send persistent ticket panel (ADMIN ONLY)"""
+        panel_title = title if title else t("tickets.panel_title", default="🎫 Support Tickets")
+        panel_desc = (description.replace("\\n", "\n") if description else
+                      t("tickets.panel_desc", default="Need help? Click the button below to create a support ticket!\n\nA private channel will be created where you can discuss your issue with staff."))
+
         embed = EmbedFactory.create(
-            title=t("tickets.panel_title", default="🎫 Support Tickets"),
-            description=t("tickets.panel_desc", default="Need help? Click the button below to create a support ticket!\n\nA private channel will be created where you can discuss your issue with staff."),
+            title=panel_title,
+            description=panel_desc,
             color=EmbedColor.PRIMARY
         )
+
+        if image_url:
+            embed.set_image(url=image_url)
+        if thumbnail_url:
+            embed.set_thumbnail(url=thumbnail_url)
 
         view = TicketCreateView(self)
         await interaction.channel.send(embed=embed, view=view)
