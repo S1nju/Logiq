@@ -8,33 +8,14 @@ from discord import app_commands
 from discord.ext import commands
 import random
 import logging
+import glob
 
 from utils.embeds import EmbedFactory, EmbedColor
 
 logger = logging.getLogger(__name__)
 
 # Hardcoded GIF lists to guarantee ONLY men are featured
-MEN_HUG_GIFS = [
-    "assets/gifs/Nsd8B44i.gif",
-    "assets/gifs/nQTI90lm.gif",
-    "assets/gifs/ortTfVI6.gif",
 
-]
-
-MEN_CUDDLE_GIFS = [
-    "assets/gifs/CFadSNIwNoleZ.gif",
-    "assets/gifs/4xANsChqMOdmv.gif",
- 
-
-]
-
-MEN_SLAP_GIFS = [
-    "assets/gifs/5eFdSOUN.gif",
-    "assets/gifs/Hdp9mqLE0Rstpi.gif",
-    "assets/gifs/J7dNlRIcUYdgq.gif",
-    "assets/gifs/T3Q5FcJ8QLClVE.gif",
-    "assets/gifs/rpafuilN.gif"
-]
 
 CRINGE_REPLIES = [
    
@@ -118,22 +99,48 @@ class ActionBackView(discord.ui.View):
         self.action = action
         self.author = author
         self.target = target
+        self.MEN_HUG_GIFS = [
+            "assets/gifs/Nsd8B44i.gif",
+            "assets/gifs/nQTI90lm.gif",
+            "assets/gifs/ortTfVI6.gif",
+
+        ]
+
+        self.MEN_CUDDLE_GIFS = [
+            "assets/gifs/CFadSNIwNoleZ.gif",
+            "assets/gifs/4xANsChqMOdmv.gif",
+ 
+
+        ]
+
+        self.MEN_SLAP_GIFS = [
+            "assets/gifs/5eFdSOUN.gif",
+            "assets/gifs/Hdp9mqLE0Rstpi.gif",
+            "assets/gifs/J7dNlRIcUYdgq.gif",
+            "assets/gifs/T3Q5FcJ8QLClVE.gif",
+            "assets/gifs/rpafuilN.gif"
+        ]
         self.message = None
         self.back_desc_func = back_desc_func
+        self.load_gifs()
         
         btn_style = discord.ButtonStyle.danger if action == "slap" else discord.ButtonStyle.primary
         self.action_btn = discord.ui.Button(label=label, style=btn_style)
         self.action_btn.callback = self.button_callback
         self.add_item(self.action_btn)
+    def load_gifs(self):
+        self.MEN_HUG_GIFS = glob.glob("assets/gifs/hugs/*.gif")
+        self.MEN_CUDDLE_GIFS = glob.glob("assets/gifs/kisses/*.gif")
+        self.MEN_SLAP_GIFS = glob.glob("assets/gifs/slaps/*.gif")
 
     async def button_callback(self, interaction: discord.Interaction):
         if interaction.user != self.target:
             return await interaction.response.send_message("This button is not for you!", ephemeral=True)
             
         GIF_MAP = {
-            "hug": (MEN_HUG_GIFS, "hug.gif"),
-            "cuddle": (MEN_CUDDLE_GIFS, "cuddle.gif"),
-            "slap": (MEN_SLAP_GIFS, "slap.gif")
+            "hug": (self.MEN_HUG_GIFS, "hug.gif"),
+            "cuddle": (self.MEN_CUDDLE_GIFS, "cuddle.gif"),
+            "slap": (self.MEN_SLAP_GIFS, "slap.gif")
         }
         
         gif_list, filename = GIF_MAP[self.action]
@@ -191,7 +198,7 @@ class Fun(commands.Cog):
         if member == interaction.user:
             return await interaction.response.send_message("You can't hug yourself, but I'll hug you! 🫂", ephemeral=True)
             
-        gif_path = random.choice(MEN_HUG_GIFS)
+        gif_path = random.choice(self.MEN_HUG_GIFS)
         file = discord.File(gif_path, filename="hug.gif")
         
         embed = discord.Embed(
@@ -211,7 +218,7 @@ class Fun(commands.Cog):
         if member == interaction.user:
             return await interaction.response.send_message("You can't really cuddle yourself like that! 😅", ephemeral=True)
             
-        gif_path = random.choice(MEN_CUDDLE_GIFS)
+        gif_path = random.choice(self.MEN_CUDDLE_GIFS)
         file = discord.File(gif_path, filename="cuddle.gif")
         
         embed = discord.Embed(
@@ -231,7 +238,7 @@ class Fun(commands.Cog):
         if member == interaction.user:
             return await interaction.response.send_message("Why would you want to slap yourself? Stop that!", ephemeral=True)
             
-        gif_path = random.choice(MEN_SLAP_GIFS)
+        gif_path = random.choice(self.MEN_SLAP_GIFS)
         file = discord.File(gif_path, filename="slap.gif")
         
         embed = discord.Embed(
@@ -367,21 +374,21 @@ class Fun(commands.Cog):
                 return
                 
             if action_type == "hug":
-                gif_path = random.choice(MEN_HUG_GIFS)
+                gif_path = random.choice(self.MEN_HUG_GIFS)
                 file = discord.File(gif_path, filename="hug.gif")
                 desc = f"**{message.author.display_name}** يعانق **{member.display_name}**! 🫂"
                 attachment_name = "hug.gif"
                 btn_label = "عناق متبادل 🫂"
                 def get_desc(t, a): return f"**{t.display_name}** يبادلك العناق يا **{a.display_name}**! 🫂"
             elif action_type == "cuddle":
-                gif_path = random.choice(MEN_CUDDLE_GIFS)
+                gif_path = random.choice(self.MEN_CUDDLE_GIFS)
                 file = discord.File(gif_path, filename="cuddle.gif")
                 desc = f"**{message.author.display_name}** يبوس **{member.display_name}**! 🥰"
                 attachment_name = "cuddle.gif"
                 btn_label = "بوسة متبادلة 🥰"
                 def get_desc(t, a): return f"**{t.display_name}** يبادلك البوسة يا **{a.display_name}**! 🥰"
             elif action_type == "slap":
-                gif_path = random.choice(MEN_SLAP_GIFS)
+                gif_path = random.choice(self.MEN_SLAP_GIFS)
                 file = discord.File(gif_path, filename="slap.gif")
                 desc = f"**{message.author.display_name}** يعطي كف لـ **{member.display_name}**! 😠"
                 attachment_name = "slap.gif"
