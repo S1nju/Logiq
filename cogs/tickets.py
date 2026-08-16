@@ -194,6 +194,12 @@ class Tickets(commands.Cog):
         # Rate limiting dict for ticket message activity score: (guild_id, user_id, channel_id) -> last_time
         self.message_cooldowns = {}
 
+    async def cog_load(self):
+        """Register persistent views when cog is loaded so buttons work across bot restarts"""
+        self.bot.add_view(TicketCreateView(self))
+        self.bot.add_view(TicketControlView(self))
+        logger.info("Registered persistent TicketCreateView and TicketControlView")
+
     async def is_eligible_for_scoring(self, member: discord.Member, guild_config: dict) -> bool:
         """Check if a member has a role eligible for ticket scoring (Owner, Admin, Support Role, or Ticket Score Roles)"""
         if member.id == member.guild.owner_id or member.guild_permissions.administrator:

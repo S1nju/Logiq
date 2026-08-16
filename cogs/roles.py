@@ -453,10 +453,48 @@ class Roles(commands.Cog):
         self.bot.loop.create_task(self._register_persistent_views())
     
     async def _register_persistent_views(self):
-        """Register persistent views for role menus"""
+        """Register persistent views for role menus across all configured guilds"""
         await self.bot.wait_until_ready()
-        # Views are automatically re-registered when messages are loaded
-        logger.info("Role menu persistent views ready")
+        try:
+            cursor = self.db.db.guilds.find({"role_menu_data": {"$exists": True}})
+            async for guild_data in cursor:
+                guild_id = guild_data.get("guild_id")
+                role_menu = guild_data.get("role_menu_data", {})
+                roles = role_menu.get("roles", [])
+                is_exclusive = role_menu.get("is_exclusive", False)
+                title = role_menu.get("title", "Role Menu")
+
+                if not roles:
+                    continue
+
+                guild = self.bot.get_guild(guild_id)
+                role_list = []
+                for r in roles:
+                    role_id = int(r['id'])
+                    role_obj = guild.get_role(role_id) if guild else None
+                    if not role_obj:
+                        class DummyRole:
+                            def __init__(self, rid, name):
+                                self.id = rid
+                                self.name = name
+                                self.is_default = lambda: False
+                                self.is_integration = lambda: False
+                        role_obj = DummyRole(role_id, r.get('label', 'Role'))
+                    role_list.append({
+                        'role': role_obj,
+                        'emoji': r.get('emoji', '🎭'),
+                        'label': r.get('label', 'Role')
+                    })
+
+                if is_exclusive:
+                    view = ExclusiveRoleView(role_list, title, timeout=None)
+                else:
+                    view = MultiRoleView(role_list, timeout=None)
+
+                self.bot.add_view(view)
+                logger.info(f"Registered persistent role view for guild {guild_id} ('{title}')")
+        except Exception as e:
+            logger.error(f"Error registering persistent role views: {e}", exc_info=True)
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
