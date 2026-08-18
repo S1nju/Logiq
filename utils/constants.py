@@ -58,7 +58,7 @@ MODERATION = {
     "max_warnings": 3,
     "auto_ban_warnings": 5,
     "mute_role_name": "Muted",
-    "max_mentions": 5,
+    "max_mentions": 50,
     "max_emojis": 10,
     "spam_threshold": 5,  # messages
     "spam_interval": 5    # seconds
