@@ -117,50 +117,6 @@ class Moderation(commands.Cog):
                     if cmd_prefix in valid_aliases or cmd_prefix in default_aliases:
                         await message.channel.send("❌ عذراً، ليس لديك الصلاحيات الكافية لتنفيذ هذا الأمر.")
 
-        # Check spam
-        if self.module_config.get('auto_mod', {}).get('spam_detection', True):
-            await self._check_spam(message)
-
-        # Check excessive mentions
-        max_mentions = self.module_config.get('auto_mod', {}).get('max_mentions', 5)
-        if len(message.mentions) > max_mentions:
-            await message.delete()
-            await message.channel.send(
-                f"{message.author.mention} Please don't spam mentions!",
-                delete_after=5
-            )
-            return
-
-    async def _check_spam(self, message: discord.Message):
-        """Check for spam messages"""
-        user_id = message.author.id
-        current_time = datetime.utcnow().timestamp()
-
-        if user_id not in self.spam_tracker:
-            self.spam_tracker[user_id] = []
-
-        # Add message timestamp
-        self.spam_tracker[user_id].append(current_time)
-
-        # Remove old timestamps (older than 5 seconds)
-        self.spam_tracker[user_id] = [
-            ts for ts in self.spam_tracker[user_id]
-            if current_time - ts < 5
-        ]
-
-        # Check if spam threshold exceeded
-        if len(self.spam_tracker[user_id]) > 5:
-            try:
-                await message.author.timeout(timedelta(minutes=5), reason="Spam detected")
-                await message.channel.send(
-                    f"{message.author.mention} has been timed out for 5 minutes due to spam.",
-                    delete_after=10
-                )
-                self.spam_tracker[user_id] = []
-                logger.info(f"Auto-muted {message.author} for spam")
-            except discord.Forbidden:
-                pass
-
     @app_commands.command(name="warn", description="Warn a user")
     @app_commands.describe(
         user="User to warn",

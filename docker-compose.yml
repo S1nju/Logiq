@@ -29,21 +29,5 @@ services:
     volumes:
       - mongodb_data:/data/db
 
-  lavalink:
-    image: ghcr.io/lavalink-devs/lavalink:4
-    container_name: lavalink
-    restart: unless-stopped
-    network_mode: host
-    environment:
-      - SERVER_PORT=2333
-      - LAVALINK_SERVER_PASSWORD=youshallnotpass
-    volumes:
-      - ./application.yml:/opt/Lavalink/application.yml
-    healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --header=\"Authorization: youshallnotpass\" --spider http://127.0.0.1:2333/version || exit 1"]
-      interval: 5s
-      timeout: 5s
-      retries: 12
-
 volumes:
   mongodb_data:
