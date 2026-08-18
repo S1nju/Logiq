@@ -58,10 +58,7 @@ MODERATION = {
     "max_warnings": 3,
     "auto_ban_warnings": 5,
     "mute_role_name": "Muted",
-    "max_mentions": 50,
-    "max_emojis": 10,
-    "spam_threshold": 5,  # messages
-    "spam_interval": 5    # seconds
+    "max_emojis": 10
 }
 
 # Time Limits
@@ -83,8 +80,7 @@ AI_SETTINGS = {
     "max_tokens": 500,
     "temperature": 0.7,
     "max_history": 10,
-    "toxicity_threshold": 0.7,
-    "spam_threshold": 0.8
+    "toxicity_threshold": 0.7
 }
 
 # Music Settings
