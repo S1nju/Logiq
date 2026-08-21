@@ -201,7 +201,7 @@ class Tickets(commands.Cog):
         logger.info("Registered persistent TicketCreateView and TicketControlView")
 
     async def is_eligible_for_scoring(self, member: discord.Member, guild_config: dict) -> bool:
-        """Check if a member has a role eligible for ticket scoring (Owner, Admin, Support Role, or Ticket Score Roles)"""
+        """Check if a member has a role eligible for ticket scoring/staff permissions (Owner, Admin, Support Role, Score Roles, View Roles)"""
         if member.id == member.guild.owner_id or member.guild_permissions.administrator:
             return True
 
@@ -213,6 +213,10 @@ class Tickets(commands.Cog):
         if any(r.id in score_roles for r in member.roles):
             return True
 
+        view_roles = guild_config.get('ticket_view_roles', [])
+        if any(r.id in view_roles for r in member.roles):
+            return True
+
         return False
 
     async def can_manage_ticket(self, interaction: discord.Interaction) -> bool:
@@ -221,9 +225,9 @@ class Tickets(commands.Cog):
         if await self.is_eligible_for_scoring(interaction.user, guild_config):
             return True
 
-        # Check if user created the ticket
+        # Check if user created or claimed the ticket
         ticket = await self.db.get_ticket_by_channel(interaction.channel.id)
-        if ticket and ticket.get('user_id') == interaction.user.id:
+        if ticket and (ticket.get('user_id') == interaction.user.id or ticket.get('claimed_by') == interaction.user.id):
             return True
 
         return False
