@@ -328,6 +328,16 @@ class Tickets(commands.Cog):
                         send_messages=True
                     )
 
+            # Add custom view roles
+            view_roles = guild_config.get('ticket_view_roles', [])
+            for r_id in view_roles:
+                v_role = interaction.guild.get_role(r_id)
+                if v_role:
+                    overwrites[v_role] = discord.PermissionOverwrite(
+                        read_messages=True,
+                        send_messages=True
+                    )
+
             # Get sequential ticket number (starting from 631)
             ticket_number = await self.db.get_next_ticket_number(interaction.guild.id)
             channel_name = f"🎫・{ticket_number}"
@@ -441,6 +451,19 @@ class Tickets(commands.Cog):
             send_messages=True,
             manage_messages=True
         )
+
+        # Revoke access for support role and view roles so only claimer, creator, and explicitly added users can see it
+        support_role_id = guild_config.get('support_role')
+        if support_role_id:
+            support_role = interaction.guild.get_role(support_role_id)
+            if support_role:
+                await interaction.channel.set_permissions(support_role, overwrite=None)
+
+        view_roles = guild_config.get('ticket_view_roles', [])
+        for r_id in view_roles:
+            v_role = interaction.guild.get_role(r_id)
+            if v_role:
+                await interaction.channel.set_permissions(v_role, overwrite=None)
 
         # Update channel topic
         try:
@@ -727,6 +750,81 @@ class Tickets(commands.Cog):
             await self.db.update_guild(interaction.guild.id, {"ticket_score_roles": score_roles})
             await interaction.response.send_message(
                 embed=EmbedFactory.success("Role Removed", f"Removed {role.mention} from ticket score roles."),
+                ephemeral=True
+            )
+
+    @app_commands.command(name="ticket-viewroles", description="Manage roles who can view unclaimed tickets (Admin)")
+    @app_commands.describe(
+        action="Add or remove view role",
+        role="Role to manage"
+    )
+    @app_commands.choices(action=[
+        app_commands.Choice(name="Add Role", value="add"),
+        app_commands.Choice(name="Remove Role", value="remove"),
+        app_commands.Choice(name="List Roles", value="list")
+    ])
+    @is_admin()
+    async def ticket_viewroles(
+        self,
+        interaction: discord.Interaction,
+        action: str,
+        role: Optional[discord.Role] = None
+    ):
+        """Configure roles eligible to see unclaimed tickets (ADMIN ONLY)"""
+        guild_config = await self.db.get_guild(interaction.guild.id)
+        if not guild_config:
+            guild_config = await self.db.create_guild(interaction.guild.id)
+
+        view_roles = guild_config.get('ticket_view_roles', [])
+
+        if action == "list":
+            if not view_roles:
+                await interaction.response.send_message(
+                    embed=EmbedFactory.info("View Roles", "No specific ticket view roles configured. Defaulting to admins and support role."),
+                    ephemeral=True
+                )
+                return
+            role_mentions = [interaction.guild.get_role(r_id).mention for r_id in view_roles if interaction.guild.get_role(r_id)]
+            embed = EmbedFactory.create(
+                title="👁️ Ticket View Roles",
+                description="\n".join(role_mentions) if role_mentions else "None active",
+                color=EmbedColor.INFO
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        if not role:
+            await interaction.response.send_message(
+                embed=EmbedFactory.error("Missing Role", "Please select a role to add or remove."),
+                ephemeral=True
+            )
+            return
+
+        if action == "add":
+            if role.id in view_roles:
+                await interaction.response.send_message(
+                    embed=EmbedFactory.warning("Already Added", f"{role.mention} is already in the view roles list."),
+                    ephemeral=True
+                )
+                return
+            view_roles.append(role.id)
+            await self.db.update_guild(interaction.guild.id, {"ticket_view_roles": view_roles})
+            await interaction.response.send_message(
+                embed=EmbedFactory.success("Role Added", f"Added {role.mention} to ticket view roles."),
+                ephemeral=True
+            )
+
+        elif action == "remove":
+            if role.id not in view_roles:
+                await interaction.response.send_message(
+                    embed=EmbedFactory.warning("Not Found", f"{role.mention} is not in the view roles list."),
+                    ephemeral=True
+                )
+                return
+            view_roles.remove(role.id)
+            await self.db.update_guild(interaction.guild.id, {"ticket_view_roles": view_roles})
+            await interaction.response.send_message(
+                embed=EmbedFactory.success("Role Removed", f"Removed {role.mention} from ticket view roles."),
                 ephemeral=True
             )
 
