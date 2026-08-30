@@ -46,6 +46,7 @@ modules:
     enabled: true
   leveling:
     enabled: true
+    voice_xp_interval: 60
     voice_xp_rate: 5
     xp_cooldown: 60
     xp_per_message: 10

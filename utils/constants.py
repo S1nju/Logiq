@@ -34,13 +34,18 @@ EMOJIS = {
 LEVELING = {
     "xp_per_message": 10,
     "xp_cooldown": 60,  # seconds
-    "base_xp": 100,
-    "xp_multiplier": 1.5
+    "voice_xp_rate": 5,  # XP per voice interval
+    "voice_xp_interval": 60,  # voice interval in seconds
+    "base_xp": 500,  # Very hard base XP
+    "xp_multiplier": 2.2  # Exponential scaling curve
 }
 
 def calculate_level_xp(level: int) -> int:
-    """Calculate XP required for level"""
+    """Calculate cumulative total XP required for a given level (very hard curve)"""
+    if level <= 0:
+        return 0
     return int(LEVELING["base_xp"] * (level ** LEVELING["xp_multiplier"]))
+
 
 # Economy Constants
 ECONOMY = {

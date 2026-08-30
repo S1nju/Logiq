@@ -142,6 +142,16 @@ class DatabaseManager:
         ).sort("xp", -1).limit(limit)
         return await cursor.to_list(length=limit)
 
+    async def reset_all_levels(self, guild_id: Optional[int] = None) -> int:
+        """Reset all users level and xp to 0"""
+        query = {"guild_id": guild_id} if guild_id is not None else {}
+        result = await self.db.users.update_many(
+            query,
+            {"$set": {"level": 0, "xp": 0}}
+        )
+        return result.modified_count
+
+
     # Economy operations
     async def add_balance(self, user_id: int, guild_id: int, amount: int) -> bool:
         """Add to user balance"""

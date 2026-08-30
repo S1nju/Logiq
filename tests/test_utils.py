@@ -48,9 +48,13 @@ def test_message_truncate():
 
 def test_level_xp_calculation():
     """Test XP calculation for levels"""
-    assert calculate_level_xp(1) > 0
+    assert calculate_level_xp(0) == 0
+    assert calculate_level_xp(1) == 500
+    assert calculate_level_xp(5) > calculate_level_xp(1)
     assert calculate_level_xp(10) > calculate_level_xp(5)
-    assert calculate_level_xp(0) > 0
+    # Check that leveling curve scaling is exponentially hard
+    assert calculate_level_xp(10) >= 70000
+
 
 
 if __name__ == '__main__':
