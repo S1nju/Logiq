@@ -193,3 +193,93 @@ async def generate_leaderboard(users_data: list, server_name: str) -> discord.Fi
 async def generate_rank_card(user_name: str, avatar_bytes: bytes, points: int, rank: int, level: int) -> discord.File:
     buffer = await asyncio.to_thread(create_rank_card, user_name, avatar_bytes, points, rank, level)
     return discord.File(fp=buffer, filename="rank.png")
+
+import urllib.request
+
+def fetch_avatar(url: str, size: int) -> Image.Image:
+    """Fetch avatar from URL or return fallback image"""
+    if not url:
+        return Image.new("RGBA", (size, size), (147, 80, 115, 255))
+    try:
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=3) as u:
+            raw_data = u.read()
+        img = Image.open(BytesIO(raw_data)).convert('RGBA')
+        try:
+            resize_mode = Image.Resampling.LANCZOS
+        except AttributeError:
+            resize_mode = Image.ANTIALIAS
+            
+        img = img.resize((size, size), resize_mode)
+        return img
+    except Exception:
+        return Image.new("RGBA", (size, size), (147, 80, 115, 255))
+
+def make_circular(img: Image.Image) -> Image.Image:
+    """Make image circular with transparent background"""
+    mask = Image.new('L', img.size, 0)
+    draw = ImageDraw.Draw(mask)
+    draw.ellipse((0, 0, img.size[0], img.size[1]), fill=255)
+    
+    output = Image.new('RGBA', img.size, (0, 0, 0, 0))
+    output.paste(img, (0, 0))
+    output.putalpha(mask)
+    return output
+
+def create_roulette_leaderboard_image(users_data: list, image_path: str = "assets/leaderboard.png") -> BytesIO:
+    """Generate leaderboard image matching roulette bot dimensions and template"""
+    img = Image.open(image_path).convert('RGBA')
+    draw = ImageDraw.Draw(img)
+    
+    font_name = ImageFont.load_default(size=32)
+    font_score = ImageFont.load_default(size=28)
+    
+    y_centers = [369, 420, 465, 510, 555, 605, 655, 700, 750, 800]
+    av_size = 30
+    
+    for i, user in enumerate(users_data):
+        if i >= len(y_centers):
+            break
+        
+        y_center = y_centers[i] + 130
+        
+        # Avatar
+        av_x = 270
+        av_y = y_center - av_size // 2 - 2
+        avatar_img = fetch_avatar(user.get("avatar_url"), av_size)
+        circular_avatar = make_circular(avatar_img)
+        img.paste(circular_avatar, (av_x, av_y), circular_avatar)
+        
+        # Name
+        name_text = str(user.get('name', ''))
+        if len(name_text) > 15:
+            name_text = name_text[:14] + '...'
+        try:
+            reshaped = arabic_reshaper.reshape(name_text)
+            bidi = get_display(reshaped)
+        except Exception:
+            bidi = name_text
+        
+        has_anchor = hasattr(draw, 'textlength')
+        if has_anchor:
+            draw.text((av_x + 50, y_center - 2), bidi, fill="white", font=font_name, anchor="lm")
+        else:
+            draw.text((av_x + 50, y_center - 15), bidi, fill="white", font=font_name)
+            
+        # Score
+        score_val = user.get('score') if user.get('score') is not None else user.get('points', 0)
+        s_text = str(score_val)
+        if has_anchor:
+            draw.text((1220, y_center - 3), s_text, fill="white", font=font_score, anchor="mm")
+        else:
+            draw.text((1200, y_center - 15), s_text, fill="white", font=font_score)
+            
+    output = BytesIO()
+    img.save(output, format='PNG')
+    output.seek(0)
+    return output
+
+async def generate_roulette_leaderboard(users_data: list, image_path: str = "assets/leaderboard.png") -> discord.File:
+    buffer = await asyncio.to_thread(create_roulette_leaderboard_image, users_data, image_path)
+    return discord.File(fp=buffer, filename="leaderboard.png")
+

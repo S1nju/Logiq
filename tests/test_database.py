@@ -87,5 +87,34 @@ async def test_leaderboard(db_manager):
     assert leaderboard[0]['xp'] > leaderboard[-1]['xp']  # Should be sorted
 
 
+@pytest.mark.asyncio
+async def test_ticket_leaderboard_reset(db_manager):
+    """Test resetting ticket leaderboard"""
+    guild_id = 987654321
+
+    # Add scores for multiple users
+    await db_manager.add_ticket_score(101, guild_id, score=50, claimed=5, closed=4, messages=100)
+    await db_manager.add_ticket_score(102, guild_id, score=30, claimed=3, closed=2, messages=50)
+
+    # Verify scores are recorded
+    leaderboard = await db_manager.get_ticket_leaderboard(guild_id)
+    assert len(leaderboard) >= 2
+
+    # Reset leaderboard
+    reset_count = await db_manager.reset_ticket_leaderboard(guild_id)
+    assert reset_count >= 2
+
+    # Verify scores are reset to 0
+    leaderboard_after = await db_manager.get_ticket_leaderboard(guild_id)
+    assert len(leaderboard_after) == 0
+
+    user1 = await db_manager.get_user(101, guild_id)
+    assert user1['ticket_score'] == 0
+    assert user1['tickets_claimed'] == 0
+    assert user1['ticket_messages'] == 0
+    assert user1['tickets_closed'] == 0
+
+
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])
+

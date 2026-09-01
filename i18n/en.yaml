@@ -125,7 +125,7 @@ tickets:
   add_access_button: "Add User"
   remove_access_button: "Remove User"
   claimed_title: "🙋 Ownership Claimed"
-  claimed_desc: "{user} has taken ownership of this ticket!\n⭐ **+10 Score Points** awarded."
+  claimed_desc: "{user} has taken ownership of this ticket!\n⭐ **+1 Score Point** awarded."
   user_added_title: "👤 User Added"
   user_added_desc: "{user} has been granted access to this ticket by {author}."
   user_removed_title: "🚫 User Removed"
@@ -139,6 +139,11 @@ tickets:
   leaderboard_title: "🏆 Staff Ticket Leaderboard"
   panel_title: "🎫 Support Tickets"
   panel_desc: "Need help? Click the button below to create a support ticket!\n\nA private channel will be created where you can discuss your issue with staff."
+  reset_leaderboard_confirm_title: "⚠️ Reset Ticket Leaderboard"
+  reset_leaderboard_confirm_desc: "This will reset all staff ticket scores and statistics (claimed, closed, messages) to zero for this server.\n\nAre you sure you want to proceed?"
+  reset_leaderboard_title: "🏆 Ticket Leaderboard Reset"
+  reset_leaderboard_success: "Successfully reset ticket scores for **{count}** user accounts."
+
 
 verification:
   prompt_title: "🔐 Verification Required"

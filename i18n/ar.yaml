@@ -294,7 +294,7 @@ tickets:
   add_access_button: إضافة عضو
   remove_access_button: إزالة عضو
   claimed_title: 🙋 تم استلام التذكرة
-  claimed_desc: "{user} قام باستاناف واستلام ملكية هذه التذكرة!\n⭐ تم منح **+10 نقاط**."
+  claimed_desc: "{user} قام باستاناف واستلام ملكية هذه التذكرة!\n⭐ تم منح **+1 نقطة**."
   user_added_title: 👤 تم إضافة عضو
   user_added_desc: "تم منح {user} إمكانية الوصول لهذه التذكرة بواسطة {author}."
   user_removed_title: 🚫 تم إزالة عضو
@@ -314,6 +314,11 @@ tickets:
     سيتم إنشاء قناة خاصة حيث يمكنك مناقشة مشكلتك مع فريق الدعم.'
   panel_title: 🎫 تذاكر الدعم
   ticket_id: معرف التذكرة
+  reset_leaderboard_confirm_title: "⚠️ إعادة ضبط قائمة صدارة التذاكر"
+  reset_leaderboard_confirm_desc: "سيؤدي هذا إلى إعادة ضبط جميع نقاط وإحصائيات تذاكر الدعم للموظفين إلى الصفر لهذا السيرفر.\n\nهل أنت تأكد من متابعة هذه العملية؟"
+  reset_leaderboard_title: "🏆 تم إعادة ضبط قائمة صدارة التذاكر"
+  reset_leaderboard_success: "تم إعادة ضبط نقاط التذاكر بنجاح لـ **{count}** حساب مستخدم."
+
 utility:
   account_created: تاريخ إنشاء الحساب
   avatar_desc: عرض صورة المستخدم الشخصية

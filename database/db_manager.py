@@ -265,6 +265,20 @@ class DatabaseManager:
         ).sort("ticket_score", -1).limit(limit)
         return await cursor.to_list(length=limit)
 
+    async def reset_ticket_leaderboard(self, guild_id: Optional[int] = None) -> int:
+        """Reset ticket score stats for all users in a guild (or all guilds)"""
+        query = {"guild_id": guild_id} if guild_id is not None else {}
+        result = await self.db.users.update_many(
+            query,
+            {"$set": {
+                "ticket_score": 0,
+                "tickets_claimed": 0,
+                "ticket_messages": 0,
+                "tickets_closed": 0
+            }}
+        )
+        return result.modified_count
+
     async def get_ticket_score(self, user_id: int, guild_id: int) -> Dict[str, Any]:
         """Get ticket score stats for user"""
         user = await self.get_user(user_id, guild_id)

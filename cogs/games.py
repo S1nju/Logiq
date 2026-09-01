@@ -10,7 +10,7 @@ from typing import Optional
 import logging
 from collections import defaultdict
 from utils.i18n import t
-from utils.image_gen import generate_rank_card, generate_leaderboard
+from utils.image_gen import generate_rank_card, generate_leaderboard, generate_roulette_leaderboard
 from utils.embeds import EmbedFactory, EmbedColor
 from utils.permissions import is_admin
 from database.db_manager import DatabaseManager
@@ -375,47 +375,43 @@ class Games(commands.Cog):
     @app_commands.command(name="leaderboard", description="View server leaderboard")
     async def leaderboard(self, interaction: discord.Interaction):
         """View leaderboard - PUBLIC"""
+        await interaction.response.defer()
+
         leaderboard = await self.db.get_leaderboard(interaction.guild.id, limit=10)
 
         if not leaderboard:
-            await interaction.response.send_message(
-                embed=EmbedFactory.info("No Data", "No leaderboard data available"),
-                ephemeral=True
+            await interaction.followup.send(
+                embed=EmbedFactory.info("No Data", "No leaderboard data available")
             )
             return
 
-        await interaction.response.defer()
         users_data = []
         for i, u in enumerate(leaderboard):
             user_id = u['user_id']
-            # Fetch avatar bytes if possible
-            member = interaction.guild.get_member(user_id)
-            avatar_bytes = None
+            member = interaction.guild.get_member(user_id) if interaction.guild else None
+            avatar_url = None
             name_str = f"User {user_id}"
+
             if member:
+                avatar_url = member.display_avatar.url if member.display_avatar else None
                 name_str = member.display_name
-                try:
-                    if member.display_avatar:
-                        avatar_bytes = await member.display_avatar.read()
-                except Exception:
-                    pass
             else:
                 try:
                     fetched = await self.bot.fetch_user(user_id)
+                    avatar_url = fetched.display_avatar.url if fetched.display_avatar else None
                     name_str = fetched.display_name
-                    if fetched.avatar:
-                        avatar_bytes = await fetched.avatar.read()
                 except Exception:
                     pass
-                    
+
             users_data.append({
-                'avatar_bytes': avatar_bytes,
+                'rank': i + 1,
+                'id': user_id,
                 'name': name_str,
-                'points': u.get('xp', 0),
-                'rank': i + 1
+                'score': u.get('xp', 0),
+                'avatar_url': avatar_url
             })
 
-        file = await generate_leaderboard(users_data, interaction.guild.name)
+        file = await generate_roulette_leaderboard(users_data)
         await interaction.followup.send(file=file)
 
 

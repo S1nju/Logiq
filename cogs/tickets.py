@@ -14,6 +14,7 @@ import time
 from utils.embeds import EmbedFactory, EmbedColor
 from utils.permissions import is_admin
 from utils.i18n import t
+from utils.image_gen import generate_roulette_leaderboard
 from database.db_manager import DatabaseManager
 
 logger = logging.getLogger(__name__)
@@ -181,6 +182,50 @@ class TicketControlView(discord.ui.View):
     async def close_ticket_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Handle ticket closing via button"""
         await self.cog.close_ticket_for_user(interaction, "Closed by user")
+
+
+class ResetTicketLeaderboardConfirmView(discord.ui.View):
+    """Confirmation view for resetting ticket leaderboard"""
+
+    def __init__(self, cog: 'Tickets', author_id: int, guild_id: int):
+        super().__init__(timeout=60)
+        self.cog = cog
+        self.author_id = author_id
+        self.guild_id = guild_id
+
+    @discord.ui.button(label="⚠️ Confirm Reset Ticket Leaderboard", style=discord.ButtonStyle.danger, custom_id="confirm_ticket_reset")
+    async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.author_id:
+            await interaction.response.send_message("❌ Only the command author can confirm this action.", ephemeral=True)
+            return
+
+        await interaction.response.defer(ephemeral=True)
+        count = await self.cog.db.reset_ticket_leaderboard(self.guild_id)
+
+        for item in self.children:
+            item.disabled = True
+
+        embed = EmbedFactory.success(
+            t("tickets.reset_leaderboard_title", default="🏆 Ticket Leaderboard Reset"),
+            t("tickets.reset_leaderboard_success", default="Successfully reset ticket scores for **{count}** user accounts.", count=count)
+        )
+        await interaction.edit_original_response(embed=embed, view=self)
+        logger.info(f"{interaction.user} confirmed ticket leaderboard reset for guild {self.guild_id} ({count} users reset)")
+
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.secondary, custom_id="cancel_ticket_reset")
+    async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.author_id:
+            await interaction.response.send_message("❌ Only the command author can cancel.", ephemeral=True)
+            return
+
+        for item in self.children:
+            item.disabled = True
+
+        await interaction.response.edit_message(
+            content="❌ Ticket leaderboard reset cancelled.",
+            embed=None,
+            view=self
+        )
 
 
 class Tickets(commands.Cog):
@@ -475,12 +520,12 @@ class Tickets(commands.Cog):
         except Exception as e:
             logger.warning(f"Could not update channel topic: {e}")
 
-        # Award score points (+10 points for claiming a ticket)
-        await self.db.add_ticket_score(interaction.user.id, interaction.guild.id, points=10, action="claim")
+        # Award score points (+1 point for claiming a ticket)
+        await self.db.add_ticket_score(interaction.user.id, interaction.guild.id, points=3, action="claim")
 
         embed = EmbedFactory.success(
             t("tickets.claimed_title", default="🙋 Ownership Claimed"),
-            t("tickets.claimed_desc", default="{user} has taken ownership of this ticket!\n⭐ **+10 Score Points** awarded.",
+            t("tickets.claimed_desc", default="{user} has taken ownership of this ticket!\n⭐ **+3 Score Points** awarded.",
               user=interaction.user.mention)
         )
         await interaction.response.send_message(embed=embed)
@@ -637,32 +682,44 @@ class Tickets(commands.Cog):
     @app_commands.command(name="ticket-leaderboard", description="View staff ticket score leaderboard")
     async def ticket_leaderboard(self, interaction: discord.Interaction):
         """View staff ticket score leaderboard"""
+        await interaction.response.defer()
+
         leaderboard_data = await self.db.get_ticket_leaderboard(interaction.guild.id, limit=10)
         if not leaderboard_data:
-            await interaction.response.send_message(
-                embed=EmbedFactory.info("Leaderboard Empty", "No ticket score stats recorded yet."),
-                ephemeral=True
+            await interaction.followup.send(
+                embed=EmbedFactory.info("Leaderboard Empty", "No ticket score stats recorded yet.")
             )
             return
 
-        lines = []
-        for idx, user_data in enumerate(leaderboard_data, 1):
-            user_id = user_data.get("user_id")
-            score = user_data.get("ticket_score", 0)
-            claimed = user_data.get("tickets_claimed", 0)
-            messages = user_data.get("ticket_messages", 0)
-            member = interaction.guild.get_member(user_id)
-            user_str = member.mention if member else f"<@{user_id}>"
+        users_data = []
+        for i, u in enumerate(leaderboard_data):
+            user_id = u.get("user_id")
+            score = u.get("ticket_score", 0)
+            member = interaction.guild.get_member(user_id) if interaction.guild else None
+            avatar_url = None
+            name = None
 
-            medal = "🥇" if idx == 1 else "🥈" if idx == 2 else "🥉" if idx == 3 else f"#{idx}"
-            lines.append(f"{medal} {user_str} — **{score} pts** ({claimed} claimed, {messages} msgs)")
+            if member:
+                avatar_url = member.display_avatar.url if member.display_avatar else None
+                name = member.display_name
+            else:
+                try:
+                    user_obj = await self.bot.fetch_user(user_id)
+                    avatar_url = user_obj.display_avatar.url if user_obj.display_avatar else None
+                    name = user_obj.display_name
+                except Exception:
+                    name = f"User {user_id}"
 
-        embed = EmbedFactory.create(
-            title=t("tickets.leaderboard_title", default="🏆 Staff Ticket Leaderboard"),
-            description="\n".join(lines),
-            color=EmbedColor.PRIMARY
-        )
-        await interaction.response.send_message(embed=embed)
+            users_data.append({
+                "rank": i + 1,
+                "id": user_id,
+                "name": name,
+                "score": score,
+                "avatar_url": avatar_url
+            })
+
+        file = await generate_roulette_leaderboard(users_data)
+        await interaction.followup.send(file=file)
 
     @app_commands.command(name="ticket-score", description="View staff ticket score and statistics")
     @app_commands.describe(user="Staff user to check stats for (optional)")
@@ -681,6 +738,23 @@ class Tickets(commands.Cog):
         )
         embed.set_thumbnail(url=target_user.display_avatar.url)
         await interaction.response.send_message(embed=embed)
+
+    @app_commands.command(name="ticket-reset-leaderboard", description="Reset staff ticket score leaderboard (Admin)")
+    @is_admin()
+    async def ticket_reset_leaderboard(self, interaction: discord.Interaction):
+        """Reset staff ticket score leaderboard with confirmation UI (ADMIN ONLY)"""
+        view = ResetTicketLeaderboardConfirmView(self, interaction.user.id, interaction.guild.id)
+        embed = EmbedFactory.warning(
+            t("tickets.reset_leaderboard_confirm_title", default="⚠️ Reset Ticket Leaderboard"),
+            t("tickets.reset_leaderboard_confirm_desc", default="This will reset all staff ticket scores and statistics (claimed, closed, messages) to zero for this server.\n\nAre you sure you want to proceed?")
+        )
+        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+
+    @app_commands.command(name="ticket-reset", description="Alias for resetting ticket leaderboard (Admin)")
+    @is_admin()
+    async def ticket_reset(self, interaction: discord.Interaction):
+        """Alias for resetting ticket leaderboard (ADMIN ONLY)"""
+        await self.ticket_reset_leaderboard(interaction)
 
     @app_commands.command(name="ticket-scoreroles", description="Manage roles eligible for ticket scoring (Admin)")
     @app_commands.describe(

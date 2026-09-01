@@ -16,6 +16,7 @@ from PIL import Image, ImageDraw, ImageFont
 from utils.embeds import EmbedFactory, EmbedColor
 from utils.constants import calculate_level_xp
 from utils.permissions import is_admin
+from utils.image_gen import generate_roulette_leaderboard
 from database.db_manager import DatabaseManager
 
 logger = logging.getLogger(__name__)
@@ -136,7 +137,47 @@ class Leveling(commands.Cog):
         else:
             await self.db.update_user(message.author.id, message.guild.id, {'xp': new_xp})
 
-    # NOTE: /rank and /leaderboard commands have been moved to games.py as PUBLIC commands
+    @app_commands.command(name="leaderboard", description="View server leveling leaderboard")
+    async def leaderboard(self, interaction: discord.Interaction):
+        """View server leveling leaderboard - PUBLIC"""
+        await interaction.response.defer()
+
+        leaderboard = await self.db.get_leaderboard(interaction.guild.id, limit=10)
+
+        if not leaderboard:
+            await interaction.followup.send(
+                embed=EmbedFactory.info("No Data", "No leaderboard data available")
+            )
+            return
+
+        users_data = []
+        for i, u in enumerate(leaderboard):
+            user_id = u['user_id']
+            member = interaction.guild.get_member(user_id) if interaction.guild else None
+            avatar_url = None
+            name_str = f"User {user_id}"
+
+            if member:
+                avatar_url = member.display_avatar.url if member.display_avatar else None
+                name_str = member.display_name
+            else:
+                try:
+                    fetched = await self.bot.fetch_user(user_id)
+                    avatar_url = fetched.display_avatar.url if fetched.display_avatar else None
+                    name_str = fetched.display_name
+                except Exception:
+                    pass
+
+            users_data.append({
+                'rank': i + 1,
+                'id': user_id,
+                'name': name_str,
+                'score': u.get('xp', 0),
+                'avatar_url': avatar_url
+            })
+
+        file = await generate_roulette_leaderboard(users_data)
+        await interaction.followup.send(file=file)
 
     @app_commands.command(name="setlevel", description="Set user's level (Admin)")
     @app_commands.describe(
