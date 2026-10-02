@@ -201,7 +201,7 @@ class Analytics(commands.Cog):
         """Slash command for active user information"""
         target_member = member or interaction.user
         await interaction.response.defer()
-        embed = await self._generate_active_user_embed(interaction.guild, target_member, period)
+        embed = await self._generate_active_user_embed(interaction.guild, target_member, period, requester=interaction.user)
         await interaction.followup.send(embed=embed)
 
     @commands.command(name="active_user_information", aliases=["نشاط_العضو", "معلومات_النشاط", "activeuserinfo"])
@@ -215,10 +215,16 @@ class Analytics(commands.Cog):
         target_member = member or ctx.author
         if period not in ["days", "week", "month", "all"]:
             period = "week"
-        embed = await self._generate_active_user_embed(ctx.guild, target_member, period)
+        embed = await self._generate_active_user_embed(ctx.guild, target_member, period, requester=ctx.author)
         await ctx.send(embed=embed)
 
-    async def _generate_active_user_embed(self, guild: discord.Guild, member: discord.Member, period: str) -> discord.Embed:
+    async def _generate_active_user_embed(
+        self,
+        guild: discord.Guild,
+        member: discord.Member,
+        period: str,
+        requester: Optional[discord.User] = None
+    ) -> discord.Embed:
         """Helper to generate active user information embed"""
         import time
         now = time.time()
@@ -282,6 +288,8 @@ class Analytics(commands.Cog):
         else:
             vc_str = f"**{secs}** ثانية"
 
+        req_name = requester.display_name if requester else member.display_name
+
         embed = EmbedFactory.create(
             title=f"👤 معلومات ونشاط العضو | {member.display_name}",
             color=EmbedColor.PRIMARY,
@@ -296,7 +304,7 @@ class Analytics(commands.Cog):
             ]
         )
         embed.set_thumbnail(url=member.display_avatar.url)
-        embed.set_footer(text=f"Requested by {interaction.user.display_name if hasattr(interaction, 'user') else 'User'}", icon_url=member.display_avatar.url)
+        embed.set_footer(text=f"Requested by {req_name}", icon_url=member.display_avatar.url)
         return embed
 
 
