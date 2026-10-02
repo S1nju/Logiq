@@ -181,6 +181,124 @@ class Analytics(commands.Cog):
 
         await interaction.response.send_message(embed=embed)
 
+    @app_commands.command(name="active_user_information", description="عرض معلومات ونشاط العضو (نقاط التذاكر، وقت الفويس، والرسائل)")
+    @app_commands.describe(
+        member="العضو المراد استعراض بياناته (اختياري)",
+        period="الفترة الزمنية (days = 24h, week = 7d, month = 30d, all = الكل)"
+    )
+    @app_commands.choices(period=[
+        app_commands.Choice(name="اليوم (24 ساعة)", value="days"),
+        app_commands.Choice(name="الأسبوع (7 أيام)", value="week"),
+        app_commands.Choice(name="الشهر (30 يوم)", value="month"),
+        app_commands.Choice(name="كل الأوقات (All Time)", value="all")
+    ])
+    async def active_user_information_slash(
+        self,
+        interaction: discord.Interaction,
+        member: Optional[discord.Member] = None,
+        period: str = "week"
+    ):
+        """Slash command for active user information"""
+        target_member = member or interaction.user
+        await interaction.response.defer()
+        embed = await self._generate_active_user_embed(interaction.guild, target_member, period)
+        await interaction.followup.send(embed=embed)
+
+    @commands.command(name="active_user_information", aliases=["نشاط_العضو", "معلومات_النشاط", "activeuserinfo"])
+    async def active_user_information_prefix(
+        self,
+        ctx: commands.Context,
+        member: Optional[discord.Member] = None,
+        period: str = "week"
+    ):
+        """Prefix command for active user information"""
+        target_member = member or ctx.author
+        if period not in ["days", "week", "month", "all"]:
+            period = "week"
+        embed = await self._generate_active_user_embed(ctx.guild, target_member, period)
+        await ctx.send(embed=embed)
+
+    async def _generate_active_user_embed(self, guild: discord.Guild, member: discord.Member, period: str) -> discord.Embed:
+        """Helper to generate active user information embed"""
+        import time
+        now = time.time()
+        
+        if period == "days":
+            start_time = now - (24 * 3600)
+            period_name = "⏱️ اليوم (24 ساعة)"
+        elif period == "week":
+            start_time = now - (7 * 24 * 3600)
+            period_name = "📅 الأسبوع (7 أيام)"
+        elif period == "month":
+            start_time = now - (30 * 24 * 3600)
+            period_name = "🗓️ الشهر (30 يوم)"
+        else:
+            start_time = 0
+            period_name = "♾️ كل الأوقات (All Time)"
+
+        events = await self.db.get_user_analytics(guild.id, member.id, start_time=start_time)
+
+        msg_count = 0
+        vc_seconds = 0
+        ticket_points = 0
+        ticket_claims = 0
+        ticket_closes = 0
+        ticket_msgs = 0
+
+        for ev in events:
+            ev_type = ev.get('type')
+            if ev_type == 'message':
+                msg_count += 1
+            elif ev_type == 'voice_time':
+                vc_seconds += ev.get('duration_seconds', 60)
+            elif ev_type == 'ticket_point':
+                action = ev.get('action')
+                pts = ev.get('points', 0)
+                ticket_points += pts
+                if action == 'claim':
+                    ticket_claims += 1
+                elif action == 'close':
+                    ticket_closes += 1
+                elif action == 'message':
+                    ticket_msgs += 1
+
+        # Fallback for all time or overall user record if analytics events are recent
+        if period == "all":
+            user_ticket_stats = await self.db.get_ticket_score(member.id, guild.id)
+            if user_ticket_stats.get('ticket_score', 0) > ticket_points:
+                ticket_points = user_ticket_stats.get('ticket_score', 0)
+                ticket_claims = max(ticket_claims, user_ticket_stats.get('tickets_claimed', 0))
+                ticket_closes = max(ticket_closes, user_ticket_stats.get('tickets_closed', 0))
+                ticket_msgs = max(ticket_msgs, user_ticket_stats.get('ticket_messages', 0))
+
+        hours = int(vc_seconds // 3600)
+        minutes = int((vc_seconds % 3600) // 60)
+        secs = int(vc_seconds % 60)
+        
+        if hours > 0:
+            vc_str = f"**{hours}** ساعة و **{minutes}** دقيقة"
+        elif minutes > 0:
+            vc_str = f"**{minutes}** دقيقة و **{secs}** ثانية"
+        else:
+            vc_str = f"**{secs}** ثانية"
+
+        embed = EmbedFactory.create(
+            title=f"👤 معلومات ونشاط العضو | {member.display_name}",
+            color=EmbedColor.PRIMARY,
+            fields=[
+                {"name": "⏳ الفترة المحدد", "value": period_name, "inline": False},
+                {"name": "🎫 نقاط التذاكر", "value": f"**{ticket_points}** نقطة", "inline": True},
+                {"name": "📥 التذاكر المستلمة (Claim)", "value": f"**{ticket_claims}** تذكرة", "inline": True},
+                {"name": "🔒 التذاكر المغلقة (Close)", "value": f"**{ticket_closes}** تذكرة", "inline": True},
+                {"name": "🔊 الوقت في الرومات الصوتية (VC)", "value": vc_str, "inline": False},
+                {"name": "💬 إجمالي الرسائل المرسلة", "value": f"**{msg_count}** رسالة", "inline": True},
+                {"name": "✉️ رسائل التذاكر", "value": f"**{ticket_msgs}** رسالة", "inline": True},
+            ]
+        )
+        embed.set_thumbnail(url=member.display_avatar.url)
+        embed.set_footer(text=f"Requested by {interaction.user.display_name if hasattr(interaction, 'user') else 'User'}", icon_url=member.display_avatar.url)
+        return embed
+
 
 async def setup(bot: commands.Bot):
     """Setup function for cog loading"""

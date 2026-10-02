@@ -299,12 +299,32 @@ class DatabaseManager:
     # Analytics operations
     async def log_event(self, event_type: str, data: Dict[str, Any]) -> None:
         """Log analytics event"""
+        import time
         event = {
             "type": event_type,
-            "timestamp": asyncio.get_event_loop().time(),
+            "timestamp": data.pop("timestamp", time.time()),
             **data
         }
         await self.db.analytics.insert_one(event)
+
+    async def get_user_analytics(
+        self,
+        guild_id: int,
+        user_id: int,
+        start_time: Optional[float] = None,
+        end_time: Optional[float] = None
+    ) -> List[Dict[str, Any]]:
+        """Get analytics events for a specific user"""
+        query = {"guild_id": guild_id, "user_id": user_id}
+        if start_time or end_time:
+            query["timestamp"] = {}
+            if start_time:
+                query["timestamp"]["$gte"] = start_time
+            if end_time:
+                query["timestamp"]["$lte"] = end_time
+
+        cursor = self.db.analytics.find(query).sort("timestamp", -1)
+        return await cursor.to_list(length=10000)
 
     async def get_analytics(
         self,

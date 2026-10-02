@@ -61,6 +61,13 @@ class Leveling(commands.Cog):
                     if not user_data:
                         user_data = await self.db.create_user(member.id, guild.id)
 
+                    # Log voice time event (60 seconds)
+                    await self.db.log_event('voice_time', {
+                        'guild_id': guild.id,
+                        'user_id': member.id,
+                        'duration_seconds': 60
+                    })
+
                     current_xp = user_data.get('xp', 0)
                     current_level = user_data.get('level', 0)
                     new_xp = current_xp + voice_xp_rate

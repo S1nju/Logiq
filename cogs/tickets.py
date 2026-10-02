@@ -313,6 +313,12 @@ class Tickets(commands.Cog):
 
         self.message_cooldowns[key] = now
         await self.db.add_ticket_score(message.author.id, message.guild.id, points=1, action="message")
+        await self.db.log_event('ticket_point', {
+            'guild_id': message.guild.id,
+            'user_id': message.author.id,
+            'action': 'message',
+            'points': 1
+        })
 
     async def create_ticket_for_user(self, interaction: discord.Interaction):
         """Create a ticket for a user"""
@@ -520,8 +526,14 @@ class Tickets(commands.Cog):
         except Exception as e:
             logger.warning(f"Could not update channel topic: {e}")
 
-        # Award score points (+1 point for claiming a ticket)
+        # Award score points (+3 point for claiming a ticket)
         await self.db.add_ticket_score(interaction.user.id, interaction.guild.id, points=3, action="claim")
+        await self.db.log_event('ticket_point', {
+            'guild_id': interaction.guild.id,
+            'user_id': interaction.user.id,
+            'action': 'claim',
+            'points': 3
+        })
 
         embed = EmbedFactory.success(
             t("tickets.claimed_title", default="🙋 Ownership Claimed"),
@@ -553,6 +565,12 @@ class Tickets(commands.Cog):
         # If closer is staff, award score points (+5 for closing/resolving ticket)
         if await self.is_eligible_for_scoring(interaction.user, guild_config):
             await self.db.add_ticket_score(interaction.user.id, interaction.guild.id, points=5, action="close")
+            await self.db.log_event('ticket_point', {
+                'guild_id': interaction.guild.id,
+                'user_id': interaction.user.id,
+                'action': 'close',
+                'points': 5
+            })
 
         # Log ticket closure to ticket log channel
         ticket_log_channel_id = guild_config.get('ticket_log_channel')
