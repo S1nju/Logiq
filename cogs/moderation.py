@@ -11,6 +11,7 @@ from typing import Optional
 import logging
 from utils.i18n import t
 import asyncio
+import re
 
 from utils.embeds import EmbedFactory, EmbedColor
 from utils.permissions import is_moderator, PermissionChecker
@@ -19,6 +20,8 @@ from database.db_manager import DatabaseManager
 from database.models import Warning
 
 logger = logging.getLogger(__name__)
+
+MENTION_REGEX = re.compile(r"^<@!?(\d+)>$")
 
 
 class Moderation(commands.Cog):
@@ -42,80 +45,143 @@ class Moderation(commands.Cog):
             return
 
         # --- Arabic Moderation Text Parser ---
-        if message.content and message.mentions:
-            guild_data = await self.db.get_guild(message.guild.id)
-            if guild_data:
-                aliases = guild_data.get('aliases', {})
-                content_parts = message.content.strip().split()
-                cmd_prefix = content_parts[0]
+        if not message.content:
+            return
+
+        content_parts = message.content.strip().split()
+        if not (1 <= len(content_parts) <= 2):
+            return
+
+        cmd_candidate = None
+        explicit_target_id = None
+
+        if len(content_parts) == 1:
+            cmd_candidate = content_parts[0]
+        else:
+            # Exactly 2 parts: one must be a mention (<@id> or <@!id>), the other the command
+            m0 = MENTION_REGEX.match(content_parts[0])
+            m1 = MENTION_REGEX.match(content_parts[1])
+            if m1 and not m0:
+                cmd_candidate = content_parts[0]
+                explicit_target_id = int(m1.group(1))
+            elif m0 and not m1:
+                cmd_candidate = content_parts[1]
+                explicit_target_id = int(m0.group(1))
+            else:
+                return
+
+        guild_data = await self.db.get_guild(message.guild.id)
+        aliases = guild_data.get('aliases', {}) if guild_data else {}
+        action_map = {
+            'ban_add': aliases.get('ban_add', 'باند'),
+            'ban_remove': aliases.get('ban_remove', 'ازالة'),
+            'voice_mute': aliases.get('voice_mute', 'ميوت'),
+            'voice_unmute': aliases.get('voice_unmute', 'فك'),
+            'chat_mute': aliases.get('chat_mute', 'اسكت'),
+            'chat_unmute': aliases.get('chat_unmute', 'تكلم'),
+            'media_block': aliases.get('media_block', 'صور'),
+            'live_block': aliases.get('live_block', 'لايف'),
+        }
+
+        matched_action = None
+        for action, alias in action_map.items():
+            if cmd_candidate == alias:
+                matched_action = action
+                break
+
+        if not matched_action:
+            return
+
+        # Resolve target member
+        target_member = None
+        if explicit_target_id:
+            target_member = message.guild.get_member(explicit_target_id)
+            if not target_member:
+                try:
+                    target_member = await message.guild.fetch_member(explicit_target_id)
+                except Exception:
+                    target_member = None
+        else:
+            # Command was a single word (e.g. "اسكت") -> Must be a reply or mention
+            if message.mentions:
                 target_member = message.mentions[0]
-                
-                # Check permissions physically
-                can_moderate, _ = PermissionChecker.can_moderate(message.author, target_member)
-                has_admin = message.author.guild_permissions.administrator
-                
-                if can_moderate or has_admin:
+            elif message.reference and message.reference.message_id:
+                if isinstance(message.reference.resolved, discord.Message):
+                    ref_author = message.reference.resolved.author
+                    target_member = ref_author if isinstance(ref_author, discord.Member) else message.guild.get_member(ref_author.id)
+                if not target_member:
                     try:
-                        if cmd_prefix == aliases.get('ban_add', 'باند'):
-                            await target_member.ban(reason=f"Action invoked by {message.author}")
-                            await message.channel.send(f"تم اعطاء باند لـ {target_member.mention}")
-                                
-                        elif cmd_prefix == aliases.get('ban_remove', 'ازالة'):
-                            banned_users = [entry async for entry in message.guild.bans()]
-                            ban_entry = discord.utils.get(banned_users, user__id=target_member.id)
-                            if ban_entry:
-                                await message.guild.unban(ban_entry.user)
-                                await message.channel.send(f"تم إزالة الباند عن {target_member.mention}")
-                                
-                        elif cmd_prefix == aliases.get('voice_mute', 'ميوت'):
-                            await target_member.edit(mute=True, reason=f"Voice muted by {message.author}")
-                            await message.channel.send(f"تم اعطاء ميوت صوتي لـ {target_member.mention}")
-                                
-                        elif cmd_prefix == aliases.get('voice_unmute', 'فك'):
-                            await target_member.edit(mute=False, reason=f"Voice unmuted by {message.author}")
-                            await message.channel.send(f"تم فك الميوت الصوتي عن {target_member.mention}")
-                                
-                        elif cmd_prefix == aliases.get('chat_mute', 'اسكت'):
-                            mute_role = discord.utils.get(message.guild.roles, name="Muted")
-                            if not mute_role:
-                                mute_role = await message.guild.create_role(name="Muted")
-                                for ch in message.guild.text_channels:
-                                    await ch.set_permissions(mute_role, send_messages=False)
-            
-                            await target_member.add_roles(mute_role, reason=f"Chat Mute by {message.author}")
-                            await message.channel.send(f"تم اسكات {target_member.mention}")
-                                
-                        elif cmd_prefix == aliases.get('chat_unmute', 'تكلم'):
-                            mute_role = discord.utils.get(message.guild.roles, name="Muted")
-                            if mute_role and mute_role in target_member.roles:
-                                await target_member.remove_roles(mute_role , reason=f"Chat Unmute by {message.author}")
-                                
-                            await message.channel.send(f"تم فك الاسكات عن {target_member.mention}")
-                                
-                        elif cmd_prefix == aliases.get('media_block', 'صور'):
-                            photo_role = discord.utils.get(message.guild.roles, name="Role Photos")
-                            if not photo_role:
-                                photo_role = await message.guild.create_role(name="Role Photos")
-                                for ch in message.guild.text_channels:
-                                    await ch.set_permissions(photo_role, send_messages=False)
-                            await target_member.add_roles(photo_role, reason=f"Photo role granted by {message.author}")
-                            await message.channel.send(f"تم منح {target_member.mention} رتبة الصورة")
-                                
-                        elif cmd_prefix == aliases.get('live_block', 'لايف'):
-                            curr_voice = target_member.voice.channel if target_member.voice else None
-                            if curr_voice:
-                                await curr_voice.set_permissions(target_member, stream=False)
-                                await message.channel.send(f"تم منع {target_member.mention} من البث المباشر (اللايف) في الروم الصوتي")
-                            else:
-                                await message.channel.send(f"يجب أن يكون {target_member.mention} في روم صوتي")
-                    except discord.Forbidden:
-                        await message.channel.send("❌ عذراً، لا أملك صلاحية كافية لتنفيذ هذا الإجراء على هذا العضو. تأكد من أن رتبتي أعلى من رتبته!")
-                else:
-                    # Provide feedback if they lack permissions but successfully matched an alias
-                    valid_aliases = list(aliases.values()) if aliases else []
-                    default_aliases = ['باند', 'ازالة', 'ميوت', 'فك', 'اسكت', 'تكلم', 'صور', 'لايف']
-                    if cmd_prefix in valid_aliases or cmd_prefix in default_aliases:
-                        await message.channel.send("❌ عذراً، ليس لديك الصلاحيات الكافية لتنفيذ هذا الأمر.")
+                        ref_msg = await message.channel.fetch_message(message.reference.message_id)
+                        if ref_msg:
+                            target_member = ref_msg.author if isinstance(ref_msg.author, discord.Member) else message.guild.get_member(ref_msg.author.id)
+                    except Exception:
+                        target_member = None
+
+        if not target_member:
+            return
+
+        # Check permissions physically
+        can_moderate, _ = PermissionChecker.can_moderate(message.author, target_member)
+        has_admin = message.author.guild_permissions.administrator
+
+        if can_moderate or has_admin:
+            try:
+                if matched_action == 'ban_add':
+                    await target_member.ban(reason=f"Action invoked by {message.author}")
+                    await message.channel.send(f"تم اعطاء باند لـ {target_member.mention}")
+
+                elif matched_action == 'ban_remove':
+                    banned_users = [entry async for entry in message.guild.bans()]
+                    ban_entry = discord.utils.get(banned_users, user__id=target_member.id)
+                    if ban_entry:
+                        await message.guild.unban(ban_entry.user)
+                        await message.channel.send(f"تم إزالة الباند عن {target_member.mention}")
+
+                elif matched_action == 'voice_mute':
+                    await target_member.edit(mute=True, reason=f"Voice muted by {message.author}")
+                    await message.channel.send(f"تم اعطاء ميوت صوتي لـ {target_member.mention}")
+
+                elif matched_action == 'voice_unmute':
+                    await target_member.edit(mute=False, reason=f"Voice unmuted by {message.author}")
+                    await message.channel.send(f"تم فك الميوت الصوتي عن {target_member.mention}")
+
+                elif matched_action == 'chat_mute':
+                    mute_role = discord.utils.get(message.guild.roles, name="Muted")
+                    if not mute_role:
+                        mute_role = await message.guild.create_role(name="Muted")
+                        for ch in message.guild.text_channels:
+                            await ch.set_permissions(mute_role, send_messages=False)
+
+                    await target_member.add_roles(mute_role, reason=f"Chat Mute by {message.author}")
+                    await message.channel.send(f"تم اسكات {target_member.mention}")
+
+                elif matched_action == 'chat_unmute':
+                    mute_role = discord.utils.get(message.guild.roles, name="Muted")
+                    if mute_role and mute_role in target_member.roles:
+                        await target_member.remove_roles(mute_role, reason=f"Chat Unmute by {message.author}")
+
+                    await message.channel.send(f"تم فك الاسكات عن {target_member.mention}")
+
+                elif matched_action == 'media_block':
+                    photo_role = discord.utils.get(message.guild.roles, name="Role Photos")
+                    if not photo_role:
+                        photo_role = await message.guild.create_role(name="Role Photos")
+                        for ch in message.guild.text_channels:
+                            await ch.set_permissions(photo_role, send_messages=False)
+                    await target_member.add_roles(photo_role, reason=f"Photo role granted by {message.author}")
+                    await message.channel.send(f"تم منح {target_member.mention} رتبة الصورة")
+
+                elif matched_action == 'live_block':
+                    curr_voice = target_member.voice.channel if target_member.voice else None
+                    if curr_voice:
+                        await curr_voice.set_permissions(target_member, stream=False)
+                        await message.channel.send(f"تم منع {target_member.mention} من البث المباشر (اللايف) في الروم الصوتي")
+                    else:
+                        await message.channel.send(f"يجب أن يكون {target_member.mention} في روم صوتي")
+            except discord.Forbidden:
+                await message.channel.send("❌ عذراً، لا أملك صلاحية كافية لتنفيذ هذا الإجراء على هذا العضو. تأكد من أن رتبتي أعلى من رتبته!")
+        else:
+            await message.channel.send("❌ عذراً، ليس لديك الصلاحيات الكافية لتنفيذ هذا الأمر.")
 
     @app_commands.command(name="warn", description="Warn a user")
     @app_commands.describe(
